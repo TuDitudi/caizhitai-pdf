@@ -2,7 +2,22 @@ import {strToU8, zip, type Zippable} from 'fflate';
 import type {WordPage} from './word';
 import {cancelled} from './tools';
 
-export type EpubOptions={title:string;author:string;language:'zh-CN'|'en';joinLines:boolean;cover?:WordPage|null};
+export const EPUB_LANGUAGES = [
+ { tag: 'zh-CN', label: '简体中文' },
+ { tag: 'zh-Hant', label: '繁體中文' },
+ { tag: 'en', label: '英语' },
+ { tag: 'ja', label: '日语' },
+ { tag: 'ko', label: '韩语' },
+ { tag: 'fr', label: '法语' },
+ { tag: 'de', label: '德语' },
+ { tag: 'es', label: '西班牙语' },
+ { tag: 'pt', label: '葡萄牙语' },
+ { tag: 'ru', label: '俄语' },
+ { tag: 'und', label: '未指定' },
+] as const;
+
+export type EpubLanguage = (typeof EPUB_LANGUAGES)[number]['tag'];
+export type EpubOptions={title:string;author:string;language:EpubLanguage;joinLines:boolean;cover?:WordPage|null};
 function xml(value:string):string {
  return Array.from(value).filter(c=>{const n=c.codePointAt(0)!;return n===9||n===10||n===13||(n>=32&&n<=0xd7ff)||(n>=0xe000&&n<=0xfffd)||(n>=0x10000&&n<=0x10ffff);}).join('').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
 }
@@ -19,7 +34,7 @@ export async function makeEpub(pages:WordPage[],options:EpubOptions,signal?:Abor
  cancelled(signal);
  if(!pages.length)throw new Error('没有可导出的页面。');
  if(!options.title.trim())throw new Error('请填写电子书书名。');
- const title=xml(options.title.trim()),author=xml(options.author.trim()),language=options.language;
+ const title=xml(options.title.trim()),author=xml(options.author.trim()),language=xml(options.language);
  const id=`urn:uuid:${crypto.randomUUID()}`,modified=new Date().toISOString().replace(/\.\d{3}Z$/,'Z');
  const cover=options.cover===undefined?(pages[0].method==='image'?pages[0]:null):options.cover;
  if(cover&&!cover.image?.byteLength)throw new Error('封面图片缺失，请重新生成。');

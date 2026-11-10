@@ -6,7 +6,7 @@ import {BookOpen,Check,Download,FileText,X} from 'lucide-react';
 import { ToolFilePanel, ToolHeading, ToolNotes, ToolSettingsHeading } from './tool-workspace';
 import {type WordPage} from '../lib/pdf/word';
 import {EpubConverter,inspectEpubFile} from '../lib/pdf/epub-converter';
-import {makeEpub} from '../lib/pdf/epub';
+import { EPUB_LANGUAGES, makeEpub, type EpubLanguage } from '../lib/pdf/epub';
 import {cancelled,downloadBytes,pageRange,safeStem,type ToolFile} from '../lib/pdf/tools';
 import {fileSize} from '../lib/pdf/export';
 
@@ -19,7 +19,7 @@ function PageImage({page}:{page:WordPage}){
 export default function EpubTool({active,current,onBusy}:Props){
  const [file,setFile]=useState<ToolFile|null>(null),[pages,setPages]=useState<WordPage[]>([]),[selected,setSelected]=useState(0);
  const [mode,setMode]=useState<'auto'|'editable'|'image'>('auto'),[range,setRange]=useState(''),[forceOcr,setForceOcr]=useState(false),[ocrLanguage,setOcrLanguage]=useState<'chi_sim+eng'|'eng'>('chi_sim+eng');
- const [title,setTitle]=useState(''),[author,setAuthor]=useState(''),[language,setLanguage]=useState<'zh-CN'|'en'>('zh-CN'),[joinLines,setJoinLines]=useState(true),[includeCover,setIncludeCover]=useState(true);
+ const [title,setTitle]=useState(''),[author,setAuthor]=useState(''),[language,setLanguage]=useState<EpubLanguage>('zh-CN'),[joinLines,setJoinLines]=useState(true),[includeCover,setIncludeCover]=useState(true);
  const [busy,setBusy]=useState(''),[error,setError]=useState(''),[message,setMessage]=useState('');
  const input=useRef<HTMLInputElement>(null),lock=useRef(false),controller=useRef<AbortController|null>(null),converter=useRef<EpubConverter|null>(null);
  const packed=useRef<{pages:WordPage[];settings:string;blob:Blob}|null>(null);
@@ -68,11 +68,17 @@ export default function EpubTool({active,current,onBusy}:Props){
    <label className="compression-option"><input aria-label="使用所选首页作为封面" type="checkbox" checked={includeCover} onChange={e=>setIncludeCover(e.target.checked)}/><span>使用所选首页作为封面<small>在阅读器书架上显示首页缩略图。</small></span></label>
    <label className="select-field">转换页码<input aria-label="EPUB 转换页码" placeholder="全部页，或 1-3,5" value={range} onChange={e=>{setRange(e.target.value);invalidate();}}/></label>
    {rangeError&&<p className="inline-error">{rangeError}</p>}
-   {mode==='editable'&&<><label className="select-field">扫描识别语言<select value={ocrLanguage} onChange={e=>{setOcrLanguage(e.target.value as 'chi_sim+eng'|'eng');invalidate();}}><option value="chi_sim+eng">简体中文 + 英文</option><option value="eng">英文</option></select></label><label className="compression-option"><input type="checkbox" checked={forceOcr} onChange={e=>{setForceOcr(e.target.checked);invalidate();}}/><span>所有页面重新识别<small>原有文字缺失或错乱时使用。</small></span></label><label className="compression-option epub-join"><input type="checkbox" checked={joinLines} onChange={e=>setJoinLines(e.target.checked)}/><span>合并段落内换行<small>空行保留分段；诗歌、列表可取消勾选。</small></span></label></>}
+   {mode==='editable'&&<><label className="select-field">扫描识别语言<select aria-label="扫描识别语言" aria-describedby="epub-ocr-language-hint" value={ocrLanguage} onChange={e=>{setOcrLanguage(e.target.value as 'chi_sim+eng'|'eng');invalidate();}}><option value="chi_sim+eng">简体中文 + 英文</option><option value="eng">英文</option></select><small id="epub-ocr-language-hint">决定识别扫描页文字时使用的模型。</small></label><label className="compression-option"><input type="checkbox" checked={forceOcr} onChange={e=>{setForceOcr(e.target.checked);invalidate();}}/><span>所有页面重新识别<small>原有文字缺失或错乱时使用。</small></span></label><label className="compression-option epub-join"><input type="checkbox" checked={joinLines} onChange={e=>setJoinLines(e.target.checked)}/><span>合并段落内换行<small>空行保留分段；诗歌、列表可取消勾选。</small></span></label></>}
    <div className="tool-form-group"><h4>书籍信息</h4>
    <label className="select-field">书名<input aria-label="EPUB 书名" maxLength={200} value={title} placeholder="默认使用 PDF 文件名" onChange={e=>setTitle(e.target.value)}/></label>
    <label className="select-field">作者（可选）<input aria-label="EPUB 作者" maxLength={150} value={author} onChange={e=>setAuthor(e.target.value)}/></label>
-   <label className="select-field">电子书语言<select value={language} onChange={e=>setLanguage(e.target.value as 'zh-CN'|'en')}><option value="zh-CN">简体中文</option><option value="en">英文</option></select></label>
+   <label className="select-field">
+    电子书语言
+    <select aria-label="电子书语言" aria-describedby="epub-language-hint" value={language} onChange={e=>setLanguage(e.target.value as EpubLanguage)}>
+     {EPUB_LANGUAGES.map(({tag,label})=><option key={tag} value={tag}>{label}</option>)}
+    </select>
+    <small id="epub-language-hint">标记书籍的主要语言，供阅读器分类和朗读。</small>
+   </label>
    </div>
     {pages.some(p=>p.warning)&&<p className="inline-error" role="status">原 PDF 的第 {pages.filter(p=>p.warning).map(p=>p.page).join('、')} 页无法读取，已保留缺页提示。这些页未恢复，需完整原文件才能补全。</p>}
    <ToolNotes><p className="note">{mode==='auto'?'自动模式保留扫描页和漫画原图，避免识别错字；有文字层的页面可调整阅读字号。若要提取扫描件文字，请选择文字重排。':mode==='editable'?'扫描页会进行文字识别。竖排繁体字、日文和漫画可能出现大量错字或丢失插图，建议改用自动或页面图片模式。':'保留每页原貌，使用固定版式阅读，适合漫画和复杂排版。图片中的文字不能调整字号或搜索。'}</p>
