@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
-  ArrowRight, BookOpen, ChevronRight, Crop, FileImage, FileText, Files,
+  ArrowRight, BookOpen, ChevronDown, ChevronRight, Crop, FileImage, FileText, Files,
   Image, Presentation, Scissors, Search, ShieldCheck, Table2, X, type LucideIcon,
 } from 'lucide-react';
 import type { ToolTab } from './pdf-tools';
@@ -45,8 +45,12 @@ export function toolFromHash(hash: string): ToolTab | null {
   return tools.find(tool => toolHref(tool.id) === hash)?.id ?? null;
 }
 
+export function toolDetails(id: ToolTab) {
+  return tools.find(tool => tool.id === id);
+}
+
 export function toolLabel(id: ToolTab) {
-  return tools.find(tool => tool.id === id)?.label;
+  return toolDetails(id)?.label;
 }
 
 function normalize(value: string) {
@@ -113,7 +117,7 @@ export function WorkspaceSearch({ disabled }: { disabled: boolean }) {
       }
     }}>
     <SearchField value={query} onChange={value => { setQuery(value); setOpen(true); }}
-      placeholder="搜索或切换工具" onSubmit={submit} disabled={disabled} />
+      placeholder="搜索工具" onSubmit={submit} disabled={disabled} />
     {open && !disabled && <div className="workspace-search-results">
       {results.length ? <ul aria-label="工具搜索结果">{results.map(tool => <li key={tool.id}>
         <a href={toolHref(tool.id)} onClick={() => setOpen(false)}><tool.icon size={17} aria-hidden="true" />{tool.label}<ChevronRight size={15} aria-hidden="true" /></a>
@@ -123,13 +127,37 @@ export function WorkspaceSearch({ disabled }: { disabled: boolean }) {
 }
 
 export function ToolNav({ active, disabled }: { active: ToolTab; disabled: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  const toggle = useRef<HTMLButtonElement>(null);
   const current = useRef<HTMLAnchorElement>(null);
+
   useEffect(() => { current.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }, [active]);
-  return <nav className="feature-nav" aria-label="PDF 功能">
-    {tools.map(tool => <a key={tool.id} href={toolHref(tool.id)} ref={active === tool.id ? current : undefined}
-      aria-current={active === tool.id ? 'page' : undefined} aria-disabled={disabled || undefined}
-      tabIndex={disabled ? -1 : undefined} onClick={event => { if (disabled) event.preventDefault(); }}>{tool.label}</a>)}
-  </nav>;
+
+  return <div className="tool-switcher" data-expanded={expanded} onKeyDown={event => {
+    if (event.key === 'Escape' && expanded) {
+      setExpanded(false);
+      toggle.current?.focus();
+    }
+  }}>
+    <div className="tool-switcher-bar">
+      <span className="tool-switcher-current">{toolLabel(active)}</span>
+      <button ref={toggle} className="tool-switcher-toggle" type="button" disabled={disabled}
+        aria-expanded={expanded} aria-controls="workspace-tool-links" onClick={() => setExpanded(!expanded)}>
+        切换工具 <ChevronDown size={16} aria-hidden="true" />
+      </button>
+    </div>
+    <nav className="feature-nav" id="workspace-tool-links" aria-label="PDF 功能">
+      {tools.map(tool => <a key={tool.id} href={toolHref(tool.id)} ref={active === tool.id ? current : undefined}
+        aria-current={active === tool.id ? 'page' : undefined} aria-disabled={disabled || undefined}
+        tabIndex={disabled ? -1 : undefined} onClick={event => {
+          if (disabled) event.preventDefault();
+          else {
+            setExpanded(false);
+            if (expanded && tool.id === active) toggle.current?.focus();
+          }
+        }}><tool.icon size={15} aria-hidden="true" />{tool.label}</a>)}
+    </nav>
+  </div>;
 }
 
 export function ToolDirectory() {
@@ -156,8 +184,8 @@ export function ToolDirectory() {
     <section className="directory-hero" aria-labelledby="directory-heading">
       <div className="directory-hero-inner">
         <div className="directory-intro">
-          <h1 id="directory-heading">找到你需要的 PDF 工具</h1>
-          <p>裁剪和整理页面，在 PDF、图片与办公文档之间转换。</p>
+          <h1 id="directory-heading">PDF 整理与转换</h1>
+          <p>裁剪、合并、拆分页面，在 PDF、图片与办公文档之间转换。</p>
           <SearchField value={query} onChange={setQuery} onSubmit={submit} placeholder="搜索工具，如：裁剪、JPG、Word" />
           <span className="directory-privacy"><ShieldCheck size={16} aria-hidden="true" />文件在浏览器内处理</span>
         </div>

@@ -2,7 +2,8 @@
 /* Browser-local blob URLs and thumbnails must never go through a server image optimizer. */
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { ArrowDown, ArrowUp, Check, Download, FileImage, FileText, Images, Plus, RotateCw, ShieldCheck, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, Download, FileText, RotateCw, Trash2, X } from 'lucide-react';
+import { ToolFilePanel, ToolHeading, ToolNotes, ToolSettingsHeading } from './tool-workspace';
 import { openPdf, renderPage } from '../lib/pdf/engine';
 import { fileSize } from '../lib/pdf/export';
 import { imagePageSize, imagesToPdf, pdfToImages, readImageFile, type ImageFile, type ImagePdfOptions, type PageImage, type PdfImageOptions } from '../lib/pdf/images';
@@ -128,14 +129,37 @@ export default function ImageTools({ active, current, onBusy }: Props) {
   function downloadImage(image: PageImage) { downloadBytes(image.bytes, image.name, image.name.endsWith('.png') ? 'image/png' : 'image/jpeg'); }
 
   return <section className="pdf-tools image-tools" style={{ display: visible ? undefined : 'none' }}>
-    <div className="tool-title"><div><h2>{isImages ? '图片转 PDF' : 'PDF 转图片'}</h2><p>{isImages ? '把照片、截图和扫描图片，整理成一份 PDF。' : '把 PDF 的每一页，保存为清晰的图片。'}</p></div><span><ShieldCheck size={15} />全部在本机处理</span></div>
-    <div className="tool-grid"><div className="tool-main" onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); e.stopPropagation(); if (!busy) void addFiles(Array.from(e.dataTransfer.files)); }}>
-      <div className="tool-filebar">
-        <input ref={input} aria-label={isImages ? '选择要转 PDF 的图片' : '选择要转图片的 PDF'} type="file" accept={isImages ? ACCEPT : '.pdf,application/pdf'} multiple={isImages} hidden onChange={e => { void addFiles(Array.from(e.target.files || [])); e.target.value = ''; }} />
-        <button className="button" disabled={!!busy} onClick={() => input.current?.click()}><Plus size={16} />{isImages ? '添加图片' : pdf ? '更换 PDF' : '选择 PDF'}</button>
-        {!isImages && current && <button className="button" disabled={!!busy} onClick={useCurrent}>使用编辑器的原始文件</button>}
-        <span>{isImages ? '支持拖入多张图片 · 每张不超过 50 MB' : '也可把 PDF 拖到这里'}</span>
-      </div>
+    <ToolHeading tool={isImages ? "images-to-pdf" : "pdf-to-images"} />
+  <div className="tool-grid" onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); e.stopPropagation(); if (!busy) void addFiles(Array.from(e.dataTransfer.files)); }}>
+   <ToolFilePanel title={isImages ? '导入要合并的图片' : '导入来源 PDF'}
+        hint={isImages ? '可拖入 PNG、JPG、JPEG、WebP、BMP 或 GIF，每张不超过 50 MB。' : '可拖入文字版或扫描版 PDF，按页导出 PNG 或 JPG。'}
+        action={isImages ? '添加图片' : pdf ? '更换 PDF' : '选择 PDF'} loaded={Boolean(isImages ? images.length : pdf)}
+        disabled={!!busy} onChoose={() => input.current?.click()} onReuse={!isImages && current ? useCurrent : undefined}>
+    <input ref={input} aria-label={isImages ? '选择要转 PDF 的图片' : '选择要转图片的 PDF'} type="file" accept={isImages ? ACCEPT : '.pdf,application/pdf'} multiple={isImages} hidden onChange={e => { void addFiles(Array.from(e.target.files || [])); e.target.value = ''; }} />
+   </ToolFilePanel>
+   <aside className="tool-options"><fieldset disabled={!!busy}>
+      {isImages ? <><ToolSettingsHeading>PDF 生成设置</ToolSettingsHeading>
+        <label className="select-field">输出文件名<input aria-label="图片 PDF 文件名" value={outputName} onChange={e => setOutputName(e.target.value)} /></label>
+        <label className="select-field">页面尺寸<select aria-label="图片 PDF 页面尺寸" value={pdfOptions.paper} onChange={e => setPdfOptions(options => ({ ...options, paper: e.target.value as ImagePdfOptions['paper'] }))}><option value="image">随图片比例（无留白）</option><option value="a4">A4 纵向</option><option value="a4-landscape">A4 横向</option></select></label>
+        {pdfOptions.paper !== 'image' && <label className="select-field">四周留白（毫米）<input aria-label="图片 PDF 留白" type="number" min="0" max="40" value={pdfOptions.margin} onChange={e => setPdfOptions(options => ({ ...options, margin: Math.max(0, Math.min(40, Number(e.target.value) || 0)) }))} /></label>}
+        <div className="tool-summary"><span>输出页数<strong>{images.length} 页</strong></span><span>原图片合计<strong>{fileSize(totalSize)}</strong></span></div>
+    <label className="compression-option"><input type="checkbox" checked={pdfOptions.limitSize} onChange={e => setPdfOptions(options => ({ ...options, limitSize: e.target.checked }))} /><span>不超过原图片合计大小<small>超限时尝试压缩，透明区域铺为白色；仍超限则停止下载。</small></span></label>
+        <ToolNotes><p className="note">每张图片占一页，等比缩放、完整显示。优先复用 PNG 和 JPG 原图；手机照片会按拍摄方向处理。</p>
+        <p className="note">未启用体积限制时优先保留画质，PDF 文件结构可能增加体积。</p></ToolNotes>
+    <button className="button primary full" disabled={!images.length} onClick={downloadPdf}><Download size={16} />生成并下载 PDF</button>
+      </> : <><ToolSettingsHeading>图片导出设置</ToolSettingsHeading>
+        <label className="select-field">图片格式<select aria-label="导出图片格式" value={imageOptions.format} onChange={e => changeImageOptions({ format: e.target.value as PdfImageOptions['format'] })}><option value="jpeg">JPG / JPEG（较小体积）</option><option value="png">PNG（无损图片）</option></select></label>
+        <label className="select-field">转换页码<input aria-label="转图片页码" placeholder="全部页，或 1-3,5" value={imageOptions.range} onChange={e => changeImageOptions({ range: e.target.value })} /><small>每次最多 200 页，可用逗号选择不连续页面。</small></label>
+        {rangeError && <p className="inline-error">{rangeError}</p>}
+        <label className="select-field">清晰度<select aria-label="图片清晰度" value={imageOptions.dpi} onChange={e => changeImageOptions({ dpi: Number(e.target.value) })}><option value="72">标准 · 72 DPI</option><option value="150">清晰 · 150 DPI</option><option value="300">高清 · 300 DPI</option></select></label>
+        {imageOptions.format === 'jpeg' && <label className="select-field">JPG 画质 · {Math.round(imageOptions.quality * 100)}%<input aria-label="JPG 画质" type="range" min="40" max="100" value={Math.round(imageOptions.quality * 100)} onChange={e => changeImageOptions({ quality: Number(e.target.value) / 100 })} /></label>}
+        <div className="tool-summary"><span>选中页面<strong>{rangeError ? '—' : selectedPages.length} 页</strong></span><span>下载方式<strong>{selectedPages.length > 1 ? 'ZIP 压缩包' : '单张图片'}</strong></span></div>
+        <ToolNotes><p className="note">导出完整页面，文字和图形都会保留在图片中；这不是提取 PDF 内的独立插图。</p>
+        <p className="note">图片与 PDF 的存储方式不同，转图后可能变大。降低清晰度或 JPG 画质可以减小体积；扫描件转高清不会增加原图细节。</p></ToolNotes>
+    <button className="button primary full" disabled={!pdf || !!rangeError} onClick={convertAndDownload}><Download size={16} />转换并下载图片</button>
+      </>}
+    </fieldset></aside>
+   <div className="tool-main tool-content" hidden={!(isImages ? images.length : pdf)} aria-label="文件和预览">
       {isImages ? images.length ? <>
         <div className="image-list">{images.map((image, index) => <div className={`image-row ${image.id === selectedImage?.id ? 'selected' : ''}`} key={image.id}>
           <button className="image-select" aria-label={`预览图片 ${index + 1}`} aria-pressed={image.id === selectedImage?.id} disabled={!!busy} onClick={() => setSelected(image.id)}>
@@ -150,36 +174,16 @@ export default function ImageTools({ active, current, onBusy }: Props) {
           </div>
         </div>)}</div>
         {selectedImage && <div className="image-layout"><div className="preview-heading"><h3>排版预览</h3><span>{pdfOptions.paper === 'image' ? '随图片比例' : pdfOptions.paper === 'a4' ? 'A4 纵向' : 'A4 横向'}</span></div><ImageLayout image={selectedImage} options={pdfOptions} /></div>}
-      </> : <div className="tool-empty"><Images size={46} /><h3>从第一张图片开始</h3><p>支持 PNG、JPG、JPEG、WebP、BMP、GIF。<br />一张图片一页，可排序和旋转；动图仅取第一帧。</p></div> : pdf ? <>
+      </> : null : pdf ? <>
         <div className="selected-tool-file"><FileText size={29} /><div><strong>{pdf.name}</strong><span>{pdf.pages} 页 · {fileSize(pdf.bytes.byteLength)}</span></div><span className="file-ready">已载入</span></div>
         <div className="image-layout"><div className="preview-heading"><h3>{results.length ? '转换结果' : '原始页面预览'}</h3>
           {results.length ? <select aria-label="图片结果页码" value={resultIndex} disabled={!!busy} onChange={e => setResultIndex(Number(e.target.value))}>{results.map((image, index) => <option key={image.page} value={index}>第 {image.page} 页</option>)}</select> : <select aria-label="转图片预览页码" value={previewPage} disabled={!!busy} onChange={e => setPreviewPage(Number(e.target.value))}>{Array.from({ length: pdf.pages }, (_, i) => <option key={i} value={i + 1}>第 {i + 1} 页</option>)}</select>}
         </div>
           {results[resultIndex] ? <><ResultPreview image={results[resultIndex]} /><div className="image-result-caption"><span>{results[resultIndex].width} × {results[resultIndex].height} 像素 · {fileSize(results[resultIndex].bytes.byteLength)}</span><button className="button" disabled={!!busy} onClick={() => downloadImage(results[resultIndex])}><Download size={14} />下载当前图片</button></div></> : <OriginalPagePreview key={`${pdf.id}-${previewPage}`} file={pdf} page={previewPage} active={visible && !isImages} />}
         </div>
-      </> : <div className="tool-empty"><FileImage size={46} /><h3>先选择一份 PDF</h3><p>文字版、扫描版都可以转换。<br />每页生成一张图片，多页自动打包下载。</p></div>}
-    </div><aside className="tool-options"><fieldset disabled={!!busy}>
-      {isImages ? <><h3>PDF 生成设置</h3>
-        <label className="select-field">输出文件名<input aria-label="图片 PDF 文件名" value={outputName} onChange={e => setOutputName(e.target.value)} /></label>
-        <label className="select-field">页面尺寸<select aria-label="图片 PDF 页面尺寸" value={pdfOptions.paper} onChange={e => setPdfOptions(options => ({ ...options, paper: e.target.value as ImagePdfOptions['paper'] }))}><option value="image">随图片比例（无留白）</option><option value="a4">A4 纵向</option><option value="a4-landscape">A4 横向</option></select></label>
-        {pdfOptions.paper !== 'image' && <label className="select-field">四周留白（毫米）<input aria-label="图片 PDF 留白" type="number" min="0" max="40" value={pdfOptions.margin} onChange={e => setPdfOptions(options => ({ ...options, margin: Math.max(0, Math.min(40, Number(e.target.value) || 0)) }))} /></label>}
-        <div className="tool-summary"><span>输出页数<strong>{images.length} 页</strong></span><span>原图片合计<strong>{fileSize(totalSize)}</strong></span></div>
-        <p className="note">每张图片占一页，等比缩放、完整显示。优先复用 PNG 和 JPG 原图；手机照片会按拍摄方向处理。</p>
-        <label className="compression-option"><input type="checkbox" checked={pdfOptions.limitSize} onChange={e => setPdfOptions(options => ({ ...options, limitSize: e.target.checked }))} /><span>不超过原图片合计大小<small>超限时尝试压缩，透明区域铺为白色；仍超限则停止下载。</small></span></label>
-        <p className="note">未启用体积限制时优先保留画质，PDF 文件结构可能增加体积。</p>
-        <button className="button primary full" disabled={!images.length} onClick={downloadPdf}><Download size={16} />生成并下载 PDF</button>
-      </> : <><h3>图片导出设置</h3>
-        <label className="select-field">图片格式<select aria-label="导出图片格式" value={imageOptions.format} onChange={e => changeImageOptions({ format: e.target.value as PdfImageOptions['format'] })}><option value="jpeg">JPG / JPEG（较小体积）</option><option value="png">PNG（无损图片）</option></select></label>
-        <label className="select-field">转换页码<input aria-label="转图片页码" placeholder="全部页，或 1-3,5" value={imageOptions.range} onChange={e => changeImageOptions({ range: e.target.value })} /><small>每次最多 200 页，可用逗号选择不连续页面。</small></label>
-        {rangeError && <p className="inline-error">{rangeError}</p>}
-        <label className="select-field">清晰度<select aria-label="图片清晰度" value={imageOptions.dpi} onChange={e => changeImageOptions({ dpi: Number(e.target.value) })}><option value="72">标准 · 72 DPI</option><option value="150">清晰 · 150 DPI</option><option value="300">高清 · 300 DPI</option></select></label>
-        {imageOptions.format === 'jpeg' && <label className="select-field">JPG 画质 · {Math.round(imageOptions.quality * 100)}%<input aria-label="JPG 画质" type="range" min="40" max="100" value={Math.round(imageOptions.quality * 100)} onChange={e => changeImageOptions({ quality: Number(e.target.value) / 100 })} /></label>}
-        <div className="tool-summary"><span>选中页面<strong>{rangeError ? '—' : selectedPages.length} 页</strong></span><span>下载方式<strong>{selectedPages.length > 1 ? 'ZIP 压缩包' : '单张图片'}</strong></span></div>
-        <p className="note">导出完整页面，文字和图形都会保留在图片中；这不是提取 PDF 内的独立插图。</p>
-        <p className="note">图片与 PDF 的存储方式不同，转图后可能变大。降低清晰度或 JPG 画质可以减小体积；扫描件转高清不会增加原图细节。</p>
-        <button className="button primary full" disabled={!pdf || !!rangeError} onClick={convertAndDownload}><Download size={16} />转换并下载图片</button>
-      </>}
-    </fieldset><div className="tool-foot"><ShieldCheck size={14} />无需上传，本机处理</div></aside></div>
+      </> : null}
+       </div>
+  </div>
     {busy && <div className="tool-progress" role="status"><div className="spinner" /><span>{busy}</span><button onClick={() => { controller.current?.abort(); setBusy('正在取消…'); }}>取消</button></div>}
     {noticeTool === active && error && <div className="tool-result error" role="alert">{error}<button aria-label="关闭图片工具错误" onClick={() => setError('')}><X size={15} /></button></div>}
     {noticeTool === active && message && <div className="tool-result" role="status"><Check size={17} />{message}<button aria-label="关闭图片工具提示" onClick={() => setMessage('')}><X size={15} /></button></div>}

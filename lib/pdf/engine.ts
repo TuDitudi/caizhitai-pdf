@@ -1,14 +1,15 @@
+import { assetUrl } from './asset-url';
 import { PDFDocument } from 'pdf-lib';
 import { dimensions, layout, type Edit } from './geometry';
 import { originalPdf, checkSize, fileSize, type ExportOptions, type ExportResult } from './export';
 let engine: Promise<typeof import('pdfjs-dist')>;
 export function pdfEngine() {
-  if (!engine) engine = import('pdfjs-dist').then(p => { p.GlobalWorkerOptions.workerSrc='/pdf-assets/pdf.worker.min.mjs'; return p; });
+  if (!engine) engine = import('pdfjs-dist').then(p => { p.GlobalWorkerOptions.workerSrc=assetUrl('pdf-assets/pdf.worker.min.mjs'); return p; });
   return engine;
 }
 export async function openPdf(data: Uint8Array) {
   const p = await pdfEngine();
-  return p.getDocument({ data, cMapUrl:'/pdf-assets/cmaps/', cMapPacked:true, standardFontDataUrl:'/pdf-assets/standard_fonts/', wasmUrl:'/pdf-assets/wasm/', isEvalSupported:false }).promise;
+  return p.getDocument({ data, cMapUrl:assetUrl('pdf-assets/cmaps/'), cMapPacked:true, standardFontDataUrl:assetUrl('pdf-assets/standard_fonts/'), wasmUrl:assetUrl('pdf-assets/wasm/'), isEvalSupported:false }).promise;
 }
 export async function renderPage(doc: any, source: number, rotation: number, target: number) {
   const page = await doc.getPage(source), base = page.getViewport({scale:1,rotation:(page.rotate+rotation)%360});

@@ -1,3 +1,4 @@
+import { assetUrl } from './asset-url';
 import { PDFDocument, StandardFonts, type PDFFont } from 'pdf-lib';
 import { cancelled } from './tools';
 
@@ -24,7 +25,7 @@ let fontBytes: Promise<Uint8Array> | undefined;
 export async function embedOfficeFont(pdf: PDFDocument, text: string): Promise<PDFFont> {
   if (!/[^\x20-\x7e\r\n\t]/.test(text)) return pdf.embedFont(StandardFonts.Helvetica);
   const kit=await import('@pdf-lib/fontkit');pdf.registerFontkit(kit.default);
-  if (!fontBytes) fontBytes=fetch('/office-assets/NotoSansSC-Regular.ttf').then(async response=>{
+  if (!fontBytes) fontBytes=fetch(assetUrl('office-assets/NotoSansSC-Regular.ttf')).then(async response=>{
     if(!response.ok)throw new Error('中文字体加载失败，请检查网络后重试。');return new Uint8Array(await response.arrayBuffer());
   }).catch(error=>{fontBytes=undefined;throw error;});
   return pdf.embedFont(await fontBytes,{subset:true});

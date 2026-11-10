@@ -1,3 +1,4 @@
+import { assetUrl } from './asset-url';
 import { openPdf, renderPage } from './engine';
 import { cancelled, pageRange, type ToolFile, type Progress } from './tools';
 export type WordPage={page:number;text:string;width:number;height:number;method:'text'|'ocr'|'image';image?:Uint8Array;warning?:string};
@@ -29,7 +30,7 @@ export async function convertWordPages(file:ToolFile,options:WordOptions,progres
    if(text.replace(/\s/g,'').length>0&&!options.forceOcr){pages.push({page:n,text,width:v.width,height:v.height,method:'text'});continue;}
    if(!worker){
     progress('正在加载本机文字识别组件…');const {createWorker}=await import('tesseract.js');cancelled(signal);
-    worker=await abortable(createWorker(options.language,1,{workerPath:'/ocr/worker.min.js',corePath:'/ocr/core',langPath:'/ocr/lang',gzip:false,cacheMethod:'none',workerBlobURL:false,logger:m=>{if(!signal?.aborted&&m.status==='recognizing text')progress(`正在识别第 ${currentPage} 页 · ${Math.round((m.progress||0)*100)}%`);}}).then(w=>{if(signal?.aborted){void w.terminate();throw new Error('操作已取消。');}return w;}),signal);
+    worker=await abortable(createWorker(options.language,1,{workerPath:assetUrl('ocr/worker.min.js'),corePath:assetUrl('ocr/core'),langPath:assetUrl('ocr/lang'),gzip:false,cacheMethod:'none',workerBlobURL:false,logger:m=>{if(!signal?.aborted&&m.status==='recognizing text')progress(`正在识别第 ${currentPage} 页 · ${Math.round((m.progress||0)*100)}%`);}}).then(w=>{if(signal?.aborted){void w.terminate();throw new Error('操作已取消。');}return w;}),signal);
     if(signal?.aborted){await worker.terminate();cancelled(signal);}
    }
    const target=Math.min(3000,Math.max(v.width,v.height)*2.5);const canvas=await renderPage(doc,n,0,target);cancelled(signal);

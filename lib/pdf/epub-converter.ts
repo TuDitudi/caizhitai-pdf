@@ -1,3 +1,4 @@
+import { assetUrl } from './asset-url';
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 import type { Worker as OcrWorker, LoggerMessage } from 'tesseract.js';
 import { pdfEngine } from './engine';
@@ -8,8 +9,8 @@ import { cancelled, pageRange, type Progress, type ToolFile } from './tools';
 // damaged pages during inspection, shifting the range and silently omitting pages.
 async function openEpubPdf(bytes: Uint8Array) {
   const engine = await pdfEngine();
-  return engine.getDocument({ data: bytes, cMapUrl: '/pdf-assets/cmaps/', cMapPacked: true,
-    standardFontDataUrl: '/pdf-assets/standard_fonts/', wasmUrl: '/pdf-assets/wasm/',
+  return engine.getDocument({ data: bytes, cMapUrl: assetUrl('pdf-assets/cmaps/'), cMapPacked: true,
+    standardFontDataUrl: assetUrl('pdf-assets/standard_fonts/'), wasmUrl: assetUrl('pdf-assets/wasm/'),
     isEvalSupported: false, stopAtErrors: true }).promise;
 }
 export async function inspectEpubFile(bytes: Uint8Array, name: string): Promise<ToolFile> {
@@ -158,7 +159,7 @@ export class EpubConverter {
         const { createWorker } = await import('tesseract.js');
         cancelled(signal);
         const worker = await createWorker(language, 1, {
-          workerPath: '/ocr/worker.min.js', corePath: '/ocr/core', langPath: '/ocr/lang',
+          workerPath: assetUrl('ocr/worker.min.js'), corePath: assetUrl('ocr/core'), langPath: assetUrl('ocr/lang'),
           gzip: true, cacheMethod: 'write', cachePath: MODEL_CACHE, workerBlobURL: false,
           logger: message => slot.notify(message), errorHandler: () => {},
         });

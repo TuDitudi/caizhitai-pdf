@@ -1,3 +1,4 @@
+import { assetUrl } from './asset-url';
 import {openPdf,renderPage} from './engine';
 import {cancelled,pageRange,type ToolFile,type Progress} from './tools';
 import {canvasBlob,yieldToBrowser} from './office-common';
@@ -59,7 +60,7 @@ export async function extractPdfTables(file:ToolFile,range:string,mode:'table'|'
      method='ocr';tokens.length=0;
      if(!worker){
       progress('正在加载本机表格文字识别组件…');const {createWorker,PSM}=await import('tesseract.js');cancelled(signal);
-      worker=await abortable(createWorker('chi_sim+eng',1,{workerPath:'/ocr/worker.min.js',corePath:'/ocr/core',langPath:'/ocr/lang',gzip:false,cacheMethod:'none',workerBlobURL:false,logger:m=>{if(!signal?.aborted&&m.status==='recognizing text')progress(`正在识别第 ${current} 页 · ${Math.round(m.progress*100)}%`);}}).then(w=>{if(signal?.aborted){void w.terminate();throw new Error('操作已取消。');}return w;}),signal);
+      worker=await abortable(createWorker('chi_sim+eng',1,{workerPath:assetUrl('ocr/worker.min.js'),corePath:assetUrl('ocr/core'),langPath:assetUrl('ocr/lang'),gzip:false,cacheMethod:'none',workerBlobURL:false,logger:m=>{if(!signal?.aborted&&m.status==='recognizing text')progress(`正在识别第 ${current} 页 · ${Math.round(m.progress*100)}%`);}}).then(w=>{if(signal?.aborted){void w.terminate();throw new Error('操作已取消。');}return w;}),signal);
       await worker!.setParameters({tessedit_pageseg_mode:PSM.SINGLE_BLOCK,preserve_interword_spaces:'1'});
      }
      const canvas=await renderPage(doc,current,0,Math.min(3000,Math.max(v.width,v.height)*3));
