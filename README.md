@@ -26,6 +26,7 @@
 | PDF 转图片 | 选择页码和清晰度，导出 PNG 或 JPG。多页结果可下载为 ZIP。 |
 | PDF 转 PPT | 每页 PDF 生成一张图片幻灯片，导出 PPTX。 |
 | PDF 转 Excel | 提取表格或识别扫描页，校对后导出 XLSX。也可按页插入图片。 |
+| 拍照扫描 | 支持 JPG、PNG、WebP、HEIC；自动识别纸张四角，可手动调整并拉正，提供彩色、黑白和原色模式，多页连续预览后导出扫描 PDF。 |
 | 图片转 PDF | PNG、JPG/JPEG、WebP、BMP 和 GIF 可排序后合成 PDF。GIF 使用首帧。 |
 | PPT 转 PDF | 支持 PPT 和 PPTX，可预览幻灯片并选择导出页。 |
 | Excel 转 PDF | 支持 XLS、XLSX 和 XLSM，可选择工作表和纸张方向，再分页导出。 |
@@ -60,6 +61,8 @@ python3 -m http.server 5176 --bind 127.0.0.1 --directory offline-dist
 - Excel 的识别结果可在预览中校对，复杂表格可能简化。Excel 转 PDF 使用工作簿内保存的公式结果。
 - 在首页或任意工具页点「意见与反馈」可打开腾讯问卷。报告问题时，可填写工具名称、操作步骤和报错文字。
 
+拍照扫描先使用缩小图寻找边框，导出再处理原照片；支持拖动四角与边线、角点放大镜、方向键微调、恢复边框和页面排序。未可靠识别的边框须确认后才能导出；原照片始终保留，可重新调整。默认限制导出体积不超过原照片合计大小，无法满足时停止导出。自动比例是估算值，已知纸型可选择 A4 或 A5；失焦、强反光及拍摄范围之外的内容无法恢复。此工具导出图片型扫描 PDF，不自动添加 OCR 文字层。
+
 ## 开源许可
 
-裁纸台项目代码采用 [MIT 许可证](LICENSE)。随附的 PDF.js、Tesseract.js、OCR 模型、字体等第三方资源适用各自的上游许可。声明见 [PDF 资源](public/pdf-assets/)、[OCR 资源](public/ocr/NOTICE.md) 和 [Office 资源](public/office-assets/licenses.html)。
+裁纸台项目代码采用 [MIT 许可证](LICENSE)。随附的 PDF.js、Tesseract.js、OCR 模型、字体等第三方资源适用各自的上游许可。声明见 [PDF 资源](public/pdf-assets/)、[OCR 资源](public/ocr/NOTICE.md) 、[扫描资源](public/scanner/NOTICE.md) 和 [Office 资源](public/office-assets/licenses.html)。

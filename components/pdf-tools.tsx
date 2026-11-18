@@ -5,10 +5,11 @@ import { ToolFilePanel, ToolHeading, ToolNotes, ToolSettingsHeading } from './to
 import {readToolFile,inspectPdf,splitGroups,safeStem,mergePdfs,splitPdf,zipPdfs,downloadBytes,type ToolFile} from '../lib/pdf/tools';
 import EpubTool from './epub-tool';
 import PdfLayoutEditor from './pdf-layout-editor';
+import PhotoScanner from './photo-scanner';
 import ImageTools from './image-tools';
 import OfficeTools from './office-tools';
 import {fileSize} from '../lib/pdf/export';
-export type ToolTab='crop'|'word'|'merge'|'split'|'epub'|'images-to-pdf'|'pdf-to-images'|'ppt-to-pdf'|'pdf-to-ppt'|'excel-to-pdf'|'pdf-to-excel';
+export type ToolTab='photo-scan'|'crop'|'word'|'merge'|'split'|'epub'|'images-to-pdf'|'pdf-to-images'|'ppt-to-pdf'|'pdf-to-ppt'|'excel-to-pdf'|'pdf-to-excel';
 type Props={active:ToolTab;current:{name:string;bytes:Uint8Array}|null;onBusy:(busy:boolean)=>void};
 export default function PdfTools({active,current,onBusy}:Props){
  const [merge,setMerge]=useState<ToolFile[]>([]),[split,setSplit]=useState<ToolFile|null>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState('');
@@ -24,7 +25,7 @@ export default function PdfTools({active,current,onBusy}:Props){
  if(split){try{groups=splitGroups(splitMode,ranges,Number(every),split.pages);}catch(e:any){rangeError=e.message;}}
  async function doMerge(){await task(async signal=>{const bytes=await mergePdfs(merge,setBusy,signal);if(signal.aborted)throw new Error('操作已取消。');downloadBytes(bytes,`${safeStem(outputName||'合并文档')}.pdf`,'application/pdf');setMessage(`已合并 ${merge.length} 个文件，共 ${merge.reduce((n,f)=>n+f.pages,0)} 页，${fileSize(bytes.byteLength)}。`);});}
  async function doSplit(){if(!split)return;await task(async signal=>{const g=splitGroups(splitMode,ranges,Number(every),split.pages);const results=await splitPdf(split,g,setBusy,signal);if(results.length===1)downloadBytes(results[0].bytes,results[0].name,'application/pdf');else{setBusy('正在打包分割后的文件…');const bytes=await zipPdfs(results);if(signal.aborted)throw new Error('操作已取消。');downloadBytes(bytes,`${safeStem(split.name)}-分割结果.zip`,'application/zip');}setMessage(`已生成 ${results.length} 份 PDF${results.length>1?'，已打包为 ZIP':''}。`);});}
- return <><PdfLayoutEditor active={active==='word'} current={current} onBusy={onBusy}/><OfficeTools active={active} current={current} onBusy={onBusy}/><ImageTools active={active} current={current} onBusy={onBusy}/><EpubTool active={active==='epub'} current={current} onBusy={onBusy}/><section className="pdf-tools" style={{display:['merge','split'].includes(active)?undefined:'none'}}>
+ return <><PhotoScanner active={active==='photo-scan'} onBusy={onBusy}/><PdfLayoutEditor active={active==='word'} current={current} onBusy={onBusy}/><OfficeTools active={active} current={current} onBusy={onBusy}/><ImageTools active={active} current={current} onBusy={onBusy}/><EpubTool active={active==='epub'} current={current} onBusy={onBusy}/><section className="pdf-tools" style={{display:['merge','split'].includes(active)?undefined:'none'}}>
  <ToolHeading tool={active} />
   <div className="tool-grid" onDragOver={ev=>ev.preventDefault()} onDrop={ev=>{ev.preventDefault();ev.stopPropagation();if(!busy)void addFiles(Array.from(ev.dataTransfer.files));}}>
    <ToolFilePanel title={active==='merge'?'导入要合并的 PDF':'导入来源 PDF'} hint={active==='merge'?'可拖入多份 PDF，添加后可调整文件顺序。':'拖入 PDF 后，按指定页码或固定页数分割。'}

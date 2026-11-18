@@ -18,7 +18,7 @@ async function removeSyncDuplicates(directory) {
   }
 }
 await removeSyncDuplicates(output);
-for (const asset of ['index.html', 'pdf-assets/pdf.worker.min.mjs', 'ocr/worker.min.js', 'office-assets/NotoSansSC-Regular.ttf']) {
+for (const asset of ['index.html', 'pdf-assets/pdf.worker.min.mjs', 'ocr/worker.min.js', 'office-assets/NotoSansSC-Regular.ttf', 'scanner/scan-worker.js', 'scanner/opencv-4.13.0.js', 'scanner/heic-decoder-1.6.7.js']) {
   if (!(await stat(path.join(output, asset))).isFile()) throw new Error(`Missing deployment asset: ${asset}`);
 }
 console.log('Static website ready in offline-dist/');

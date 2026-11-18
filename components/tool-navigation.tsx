@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
-  ArrowRight, BookOpen, ChevronDown, ChevronRight, Crop, FileImage, FileText, Files,
+  ArrowRight, Camera, BookOpen, ChevronDown, ChevronRight, Crop, FileImage, FileText, Files,
   Image, Presentation, Scissors, Search, ShieldCheck, Table2, X, type LucideIcon,
 } from 'lucide-react';
 import type { ToolTab } from './pdf-tools';
@@ -29,6 +29,7 @@ const groups: { id: string; label: string; tools: ToolEntry[] }[] = [
     { id: 'pdf-to-excel', label: 'PDF 转 Excel', description: '提取表格或按页导出图片到工作簿。', keywords: 'pdf2excel xlsx xls 表格 ocr 文字识别', icon: Table2 },
   ] },
   { id: 'import', label: '转为 PDF', tools: [
+    { id: 'photo-scan', label: '拍照扫描', description: '自动找纸张、手动调四角，拉正并增强为扫描 PDF。', keywords: '拍照扫描 扫描仪 文档扫描 手机照片 四角 边框 透视 阴影 heic heif scan camera', icon: Camera },
     { id: 'images-to-pdf', label: '图片转 PDF', description: '多张图片排序后合成一份 PDF。', keywords: 'jpg2pdf png2pdf jpg jpeg png webp bmp gif image 照片', icon: Image },
     { id: 'ppt-to-pdf', label: 'PPT 转 PDF', description: '将 PPT 或 PPTX 幻灯片导出为 PDF。', keywords: 'ppt2pdf pptx powerpoint 幻灯片 演示文稿', icon: Presentation },
     { id: 'excel-to-pdf', label: 'Excel 转 PDF', description: '选择工作表，自动分页导出 PDF。', keywords: 'excel2pdf xls xlsx xlsm 表格 工作簿', icon: Table2 },
