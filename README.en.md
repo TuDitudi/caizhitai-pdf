@@ -23,7 +23,7 @@ The interface is currently in Simplified Chinese. The Chinese labels above match
 | Crop and resize PDF | Drag the blue box or enter margins in millimeters. Adjust paper size, spacing, and scale, or rotate, reorder, and delete pages. |
 | Merge PDFs | Add several PDFs, arrange their order, and save them as one file. |
 | Split PDF | Split into single pages, fixed-size groups, or custom ranges. `1-3,5;6-8` creates two PDFs, packaged as a ZIP. |
-| PDF to Word | Extract text or run OCR on Simplified Chinese and English scans. Review the text before exporting a DOCX, or preserve the original pages as images. |
+| Edit text in the original layout | Scroll through all pages, edit text in place, and export the edited PDF. Scans use Simplified Chinese and English OCR. |
 | PDF to EPUB | Reflow text or preserve scanned pages and comics as images. By default, the first selected page becomes the cover. The ebook language labels the EPUB, and scan recognition has its own language setting. |
 | PDF to images | Choose pages and resolution, then export PNG or JPG files. Multiple images can be downloaded as a ZIP. |
 | PDF to PowerPoint | Turn each PDF page into a slide image and export a PPTX. |
@@ -58,7 +58,8 @@ Then open [Caizhitai on your device](http://127.0.0.1:5176/).
 
 - PDF, image, and document conversion runs in the browser. The website serves shared resources such as OCR models and fonts.
 - Each PDF can be up to 200 MB. The practical limit also depends on device memory and page complexity.
-- You can review OCR results for Word and Excel in the preview. Complex layouts may be simplified. Excel to PDF uses the formula results saved in the workbook.
+- The layout editor exports the selected pages. Unchanged pages are copied directly; changed pages use a high-resolution background plus replacement PDF text. Scan edits cover the original text region; check any overlap with stamps or patterns. Replacement fonts and file size may differ.
+- You can review Excel OCR results before exporting. Complex tables may be simplified. Excel to PDF uses the formula results saved in the workbook.
 - Click 「意见与反馈」 (Feedback) on the home page or any tool page to open the Tencent survey. For bug reports, include the tool name, the steps to reproduce the issue, and any error message.
 
 ## License
