@@ -49,7 +49,7 @@ function paperColor(canvas: HTMLCanvasElement, x: number, y: number, w: number, 
   return [...colors].sort((a, b) => b[1] - a[1])[0][0];
 }
 
-function removedVisibleText(original: HTMLCanvasElement, background: HTMLCanvasElement, block: EditableText, scale: number) {
+function visibleTextColor(original: HTMLCanvasElement, background: HTMLCanvasElement, block: EditableText, scale: number) {
   const c = Math.cos(block.angle), s = Math.sin(block.angle);
   const corners = [[0, 0], [block.width, 0], [0, block.height], [block.width, block.height]];
   const xs = corners.map(([x, y]) => (block.x + x * c - y * s) * scale);
@@ -57,13 +57,18 @@ function removedVisibleText(original: HTMLCanvasElement, background: HTMLCanvasE
   const x = Math.max(0, Math.floor(Math.min(...xs))), y = Math.max(0, Math.floor(Math.min(...ys)));
   const width = Math.min(original.width - x, Math.ceil(Math.max(...xs)) - x);
   const height = Math.min(original.height - y, Math.ceil(Math.max(...ys)) - y);
-  if (width <= 0 || height <= 0) return false;
+  if (width <= 0 || height <= 0) return undefined;
   const a = original.getContext('2d')!.getImageData(x, y, width, height).data;
   const b = background.getContext('2d')!.getImageData(x, y, width, height).data;
+  let strongest = 30, color: string | undefined;
   for (let i = 0; i < a.length; i += 4) {
-    if (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) > 30) return true;
+    const difference = Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
+    if (difference > strongest) {
+      strongest = difference;
+      color = `#${[a[i], a[i + 1], a[i + 2]].map(n => n.toString(16).padStart(2, '0')).join('')}`;
+    }
   }
-  return false;
+  return color;
 }
 
 export async function recognizeLayout(file: ToolFile, range: string, language: 'chi_sim+eng' | 'eng', progress: Progress, signal: AbortSignal): Promise<EditablePage[]> {
@@ -114,9 +119,13 @@ export async function recognizeLayout(file: ToolFile, range: string, language: '
             await page.render({ canvas: background, canvasContext: background.getContext('2d')!, viewport, background: '#ffffff', operationsFilter: i => !textOps.has(operators.fnArray[i]) }).promise;
             // Scanned PDFs may already contain an invisible OCR text layer.
             // Its visible glyphs belong to the image and need the scan edit path.
-            for (const block of result.blocks) if (!removedVisibleText(canvas, background, block, scale)) {
-              block.source = 'ocr';
-              block.background = paperColor(canvas, block.x * scale, block.y * scale, block.width * scale, block.height * scale);
+            for (const block of result.blocks) {
+              const color = visibleTextColor(canvas, background, block, scale);
+              if (color) block.color = color;
+              else {
+                block.source = 'ocr';
+                block.background = paperColor(canvas, block.x * scale, block.y * scale, block.width * scale, block.height * scale);
+              }
             }
             result.background = await canvasBlob(background);
           } finally { background.width = background.height = 1; }
