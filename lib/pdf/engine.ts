@@ -7,9 +7,9 @@ export function pdfEngine() {
   if (!engine) engine = import('pdfjs-dist').then(p => { p.GlobalWorkerOptions.workerSrc=assetUrl('pdf-assets/pdf.worker.min.mjs'); return p; });
   return engine;
 }
-export async function openPdf(data: Uint8Array) {
+export async function openPdf(data: Uint8Array, options: { fontExtraProperties?: boolean } = {}) {
   const p = await pdfEngine();
-  return p.getDocument({ data, cMapUrl:assetUrl('pdf-assets/cmaps/'), cMapPacked:true, standardFontDataUrl:assetUrl('pdf-assets/standard_fonts/'), wasmUrl:assetUrl('pdf-assets/wasm/'), isEvalSupported:false }).promise;
+  return p.getDocument({ data, cMapUrl:assetUrl('pdf-assets/cmaps/'), cMapPacked:true, standardFontDataUrl:assetUrl('pdf-assets/standard_fonts/'), wasmUrl:assetUrl('pdf-assets/wasm/'), isEvalSupported:false, fontExtraProperties: options.fontExtraProperties ?? false }).promise;
 }
 export async function renderPage(doc: any, source: number, rotation: number, target: number) {
   const page = await doc.getPage(source), base = page.getViewport({scale:1,rotation:(page.rotate+rotation)%360});

@@ -20,9 +20,9 @@ const groups: { id: string; label: string; tools: ToolEntry[] }[] = [
     { id: 'crop', label: '裁剪与排版', description: '裁边、缩放内容，调整纸张和页面顺序。', keywords: '裁剪pdf 扫描件 边框 页边距 旋转 删除 a4 crop resize', icon: Crop },
     { id: 'merge', label: '合并 PDF', description: '按指定顺序合并多份 PDF。', keywords: '拼接 合并文件 pdf合并 merge combine', icon: Files },
     { id: 'split', label: '按页分割', description: '按页码提取页面，或拆成多份文件。', keywords: '拆分 pdf分割 分页 提取页面 split extract', icon: Scissors },
-    { id: 'word', label: '原貌文字编辑', description: '连续预览，在原页面编辑文字并导出 PDF。', keywords: 'pdf2word word doc docx ocr 文字识别 pdf编辑 改字 原貌 模板 印章', icon: FileText },
   ] },
   { id: 'export', label: '从 PDF 转出', tools: [
+    { id: 'word', label: 'PDF 转 Word', description: '保留原字体与版式，编辑预览后导出可编辑 DOCX。', keywords: 'pdf2word word doc docx ocr 文字识别 pdf编辑 改字 原貌 模板 印章', icon: FileText },
     { id: 'epub', label: 'PDF 转 EPUB', description: '制作带封面的电子书，支持漫画和扫描件。', keywords: 'pdf2epub ebook 电子书 封面 漫画', icon: BookOpen },
     { id: 'pdf-to-images', label: 'PDF 转图片', description: '按页导出 PNG 或 JPG 图片。', keywords: 'pdf2jpg pdf2png jpeg jpg png image 导出图片', icon: FileImage },
     { id: 'pdf-to-ppt', label: 'PDF 转 PPT', description: '每页生成一张保留原貌的幻灯片。', keywords: 'pdf2ppt pptx powerpoint 幻灯片 演示文稿', icon: Presentation },

@@ -16,14 +16,14 @@ Caizhitai is a browser-based PDF toolkit. Crop dark borders from scans, fit page
 
 The interface is currently in Simplified Chinese. The Chinese labels above match the buttons on screen.
 
-## 11 tools
+## 12 tools
 
 | Tool | What it does |
 | --- | --- |
 | Crop and resize PDF | Drag the blue box or enter margins in millimeters. Adjust paper size, spacing, and scale, or rotate, reorder, and delete pages. |
 | Merge PDFs | Add several PDFs, arrange their order, and save them as one file. |
 | Split PDF | Split into single pages, fixed-size groups, or custom ranges. `1-3,5;6-8` creates two PDFs, packaged as a ZIP. |
-| Edit text in the original layout | Scroll through all pages, edit text in place, and export the edited PDF. Scans use Simplified Chinese and English OCR. |
+| PDF to Word | Scroll through pages, edit text in place, and export editable DOCX with the original font, size, color, and layout. |
 | PDF to EPUB | Reflow text or preserve scanned pages and comics as images. By default, the first selected page becomes the cover. The ebook language labels the EPUB, and scan recognition has its own language setting. |
 | PDF to images | Choose pages and resolution, then export PNG or JPG files. Multiple images can be downloaded as a ZIP. |
 | PDF to PowerPoint | Turn each PDF page into a slide image and export a PPTX. |
@@ -59,7 +59,7 @@ Then open [Caizhitai on your device](http://127.0.0.1:5176/).
 
 - PDF, image, and document conversion runs in the browser. The website serves shared resources such as OCR models and fonts.
 - Each PDF can be up to 200 MB. The practical limit also depends on device memory and page complexity.
-- The layout editor exports the selected pages. Unchanged pages are copied directly; changed pages use a high-resolution background plus replacement PDF text. Scan edits cover the original text region; check any overlap with stamps or patterns. Replacement fonts and file size may differ.
+- PDF to Word saves text as positioned editable Word text boxes and retains graphics, table lines, images, and stamps as page backgrounds; it does not rebuild native Word tables. Subset PDF fonts require the same complete original font (local font access or TTF/OTF/TTC upload) with editable embedding permission. Missing glyphs are reported instead of silently substituting fonts or shrinking text. Scans use OCR and require an explicit font choice; check repaired regions that overlap stamps or patterns. Complete embedded fonts increase DOCX size. Only selected pages are exported.
 - You can review Excel OCR results before exporting. Complex tables may be simplified. Excel to PDF uses the formula results saved in the workbook.
 - Click 「意见与反馈」 (Feedback) on the home page or any tool page to open the Tencent survey. For bug reports, include the tool name, the steps to reproduce the issue, and any error message.
 
