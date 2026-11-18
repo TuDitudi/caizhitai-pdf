@@ -22,7 +22,7 @@ const groups: { id: string; label: string; tools: ToolEntry[] }[] = [
     { id: 'split', label: '按页分割', description: '按页码提取页面，或拆成多份文件。', keywords: '拆分 pdf分割 分页 提取页面 split extract', icon: Scissors },
   ] },
   { id: 'export', label: '从 PDF 转出', tools: [
-    { id: 'word', label: 'PDF 转 Word', description: '提取文字或识别扫描件，导出 DOCX。', keywords: 'pdf2word doc docx ocr 文字识别', icon: FileText },
+    { id: 'word', label: 'PDF 转 Word', description: '保留表格、图片和印章，支持 OCR 文字附录。', keywords: 'pdf2word doc docx ocr 文字识别', icon: FileText },
     { id: 'epub', label: 'PDF 转 EPUB', description: '制作带封面的电子书，支持漫画和扫描件。', keywords: 'pdf2epub ebook 电子书 封面 漫画', icon: BookOpen },
     { id: 'pdf-to-images', label: 'PDF 转图片', description: '按页导出 PNG 或 JPG 图片。', keywords: 'pdf2jpg pdf2png jpeg jpg png image 导出图片', icon: FileImage },
     { id: 'pdf-to-ppt', label: 'PDF 转 PPT', description: '每页生成一张保留原貌的幻灯片。', keywords: 'pdf2ppt pptx powerpoint 幻灯片 演示文稿', icon: Presentation },
