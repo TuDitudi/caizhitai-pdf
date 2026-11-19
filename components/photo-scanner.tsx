@@ -92,6 +92,8 @@ function PhotoCard({photo,index,total,disabled,rendering,previewError,retry,upda
 }
 export default function PhotoScanner({active,onBusy}:{active:boolean;onBusy:(busy:boolean)=>void}) {
   const [photos,setPhotos]=useState<ScanPhoto[]>([]),[busy,setBusy]=useState(''),[error,setError]=useState(''),[message,setMessage]=useState('');
+  const [importCount, setImportCount] = useState<{ completed: number; total: number } | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const [name,setName]=useState('拍照扫描'),[quality,setQuality]=useState(3508),[limit,setLimit]=useState(true);
   const input=useRef<HTMLInputElement>(null),camera=useRef<HTMLInputElement>(null),controller=useRef<AbortController|null>(null),worker=useRef<ScanWorker|null>(null);
   if(!worker.current)worker.current=new ScanWorker();
@@ -102,19 +104,22 @@ export default function PhotoScanner({active,onBusy}:{active:boolean;onBusy:(bus
   async function task(action:(signal:AbortSignal)=>Promise<void>) {
     if(controller.current)return;const job=new AbortController();controller.current=job;setBusy('正在准备');setError('');setMessage('');onBusy(true);
     try{await action(job.signal);}catch(error){setError(job.signal.aborted?'已取消，已完成的页面仍保留。':error instanceof Error?error.message:'扫描失败，请重试。');}
-    finally{controller.current=null;setBusy('');onBusy(false);}
+    finally{controller.current=null;setBusy('');setImportCount(null);setCancelling(false);onBusy(false);}
   }
   function update(id:string,patch:Partial<ScanPhoto>) {setPhotos(previous=>previous.map(p=>p.id===id?{...p,...patch}:p));setMessage('');}
-  async function preview(photo:ScanPhoto,signal:AbortSignal) {const result=await renderScan(photo,worker.current!,1200,setBusy,signal,.94,true);if(!signal.aborted)update(photo.id,{result,dirty:false});return result;}
   async function add(files:File[]) {
     if(!files.length)return;
     await task(async signal=>{
       if(photos.length+files.length>30||totalSize+files.reduce((n,f)=>n+f.size,0)>200*1024*1024)throw new Error('每次最多 30 张照片，原文件合计不超过 200 MB。');
+      setImportCount({ completed: 0, total: files.length });
       for(let i=0;i<files.length;i++) {
-        const progress=(text:string)=>setBusy(`第 ${i+1} / ${files.length} 张：${text}`);
-        const photo=await importScanPhoto(files[i],worker.current!,progress,signal);if(signal.aborted)return;
-        setPhotos(previous=>[...previous,photo]);
-        await preview(photo,signal);
+        setBusy('正在读取照片');
+        const photo=await importScanPhoto(files[i],worker.current!,setBusy,signal);
+        if(signal.aborted)return;
+        const result=await renderScan(photo,worker.current!,1200,setBusy,signal,.94,true);
+        if(signal.aborted)return;
+        setPhotos(previous=>[...previous,{...photo,result,dirty:false}]);
+        setImportCount({ completed: i+1, total: files.length });
       }
       setMessage('已生成扫描预览。请核对纸张四角、浅色文字和格线，再导出 PDF。');
     });
@@ -134,7 +139,16 @@ export default function PhotoScanner({active,onBusy}:{active:boolean;onBusy:(bus
       <div className="scan-export-settings"><label>文件名<input aria-label="扫描 PDF 文件名" value={name} disabled={!!busy} onChange={e=>setName(e.target.value)}/></label><label>清晰度<select aria-label="扫描 PDF 清晰度" value={quality} disabled={!!busy} onChange={e=>setQuality(Number(e.target.value))}><option value={3508}>高清（长边最多 3508 像素）</option><option value={2400}>标准（长边最多 2400 像素）</option></select></label><label className="scan-size-limit"><input type="checkbox" checked={limit} disabled={!!busy} onChange={e=>setLimit(e.target.checked)}/><span>不超过原照片合计大小<small>原照片合计 {fileSize(totalSize)}；无法满足时停止导出</small></span></label></div>
       <div className="scan-photo-list" aria-label="连续扫描页面">{photos.map((photo,index)=><PhotoCard key={photo.id} photo={photo} index={index} total={photos.length} disabled={!!busy} rendering={rendering===photo.id} previewError={failures[photo.id]?.key===scanPreviewKey(photo)?failures[photo.id].message:undefined} retry={()=>retry(photo.id)} update={patch=>update(photo.id,patch)} detect={()=>void redetect(photo)} remove={()=>{setPhotos(previous=>previous.filter(p=>p.id!==photo.id));setMessage('');}} move={offset=>setPhotos(previous=>{const next=[...previous];[next[index],next[index+offset]]=[next[index+offset],next[index]];return next;})}/>)}</div>
     </>}
-    {busy&&<div className="tool-progress scan-progress" role="status"><div className="spinner"/><span>{busy}</span><button onClick={()=>controller.current?.abort()}>取消</button></div>}
+    {busy&&<div className="scan-progress">
+      <div className="scan-progress-body">
+        <div className="scan-progress-label" role="status" aria-atomic="true">
+          <strong>{cancelling?'正在取消…':busy}</strong>
+          {importCount&&importCount.total>1&&<span>已完成 {importCount.completed} / {importCount.total} 张</span>}
+        </div>
+        <progress aria-label="扫描处理进度" max={importCount?.total ?? 1} value={importCount&&importCount.total>1?importCount.completed:undefined}/>
+      </div>
+      <button className="button" disabled={cancelling} onClick={()=>{setCancelling(true);controller.current?.abort();}}>取消</button>
+    </div>}
     {error&&<div className="tool-result error" role="alert">{error}<button aria-label="关闭扫描错误" onClick={()=>setError('')}><X size={16}/></button></div>}
     {message&&<p className="tool-result" role="status">{message}</p>}
   </section>;

@@ -324,7 +324,8 @@ self.onmessage=event=>{
  const {id,type,payload}=event.data;
  queue=queue.then(async()=>{
   try {
-   self.postMessage({id,progress:'正在加载扫描组件'});await ready();
+   if(!loading)self.postMessage({id,progress:'正在加载扫描组件'});
+   await ready();
    if(type==='detect') {
     self.postMessage({id,progress:'正在识别纸张四角'});
     const canvas=await raster(payload.blob,1280);
