@@ -30,7 +30,7 @@ export class ScanWorker {
     if (this.pending) throw new Error('正在处理另一张照片，请稍候。');
     this.pending = true;
     try {
-      this.worker ??= new Worker(assetUrl('scanner/scan-worker.js'));
+      this.worker ??= new Worker(assetUrl('scanner/scan-worker.js?v=card-1'));
       const worker = this.worker, id = ++this.serial;
       return await new Promise<T>((resolve, reject) => {
         const finish = (error?: Error, value?: T) => {
