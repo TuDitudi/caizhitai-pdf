@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
 import { ArrowDown, ArrowUp, Camera, Download, ImagePlus, RotateCw, ScanLine, Trash2, X } from 'lucide-react';
 import { ToolHeading } from './tool-workspace';
+import { scanPreviewKey, useScanPreviews } from './use-scan-previews';
 import { downloadBytes, safeStem } from '../lib/pdf/tools';
 import { fileSize } from '../lib/pdf/export';
 import { ScanWorker, copyQuad, fullQuad, importScanPhoto, renderScan, scanPdf, validQuad, type Detection, type Point, type Quad, type ScanPhoto, type ScanSettings } from '../lib/scanner/client';
@@ -65,7 +66,7 @@ function CornerEditor({photo,disabled,onChange}:{photo:ScanPhoto;disabled:boolea
     </div></div>
   </div>;
 }
-function PhotoCard({photo,index,total,disabled,update,apply,detect,remove,move}:{photo:ScanPhoto;index:number;total:number;disabled:boolean;update:(patch:Partial<ScanPhoto>)=>void;apply:()=>void;detect:()=>void;remove:()=>void;move:(offset:number)=>void}) {
+function PhotoCard({photo,index,total,disabled,rendering,previewError,retry,update,detect,remove,move}:{photo:ScanPhoto;index:number;total:number;disabled:boolean;rendering:boolean;previewError?:string;retry:()=>void;update:(patch:Partial<ScanPhoto>)=>void;detect:()=>void;remove:()=>void;move:(offset:number)=>void}) {
   const resultUrl=useBlobUrl(photo.result?.blob);
   const settings=(patch:Partial<ScanSettings>)=>update({settings:{...photo.settings,...patch},dirty:true});
   return <article className="scan-photo" aria-label={`扫描第 ${index+1} 页`}>
@@ -75,15 +76,15 @@ function PhotoCard({photo,index,total,disabled,update,apply,detect,remove,move}:
     {photo.warning&&<p className="scan-warning" role="status">{photo.warning}</p>}
     <div className="scan-photo-workspace"><section className="scan-original"><h4>照片与边框</h4><CornerEditor photo={photo} disabled={disabled} onChange={points=>update({points,dirty:true})}/>
       <div className="scan-crop-actions"><button className="button" disabled={disabled} onClick={detect}><ScanLine size={16}/>重新识别</button><button className="button" disabled={disabled} onClick={()=>update({points:copyQuad(photo.initial),dirty:true})}>恢复识别框</button><button className="button" disabled={disabled} onClick={()=>update({points:fullQuad(),dirty:true})}>使用整张照片</button></div>
-    </section><section className="scan-result"><div className="scan-result-heading"><h4>扫描效果</h4><span>{photo.needsReview?'请确认纸张边框':photo.dirty?'调整待应用':photo.result?'预览已更新':''}</span></div>
-      <div className={`scan-result-paper${photo.dirty?' scan-result-stale':''}`}>
-        {resultUrl?<img src={resultUrl} width={photo.result?.width} height={photo.result?.height} alt={`第 ${index+1} 页扫描预览`} loading="lazy"/>:<div className="scan-result-empty"><ScanLine size={32}/><p>确认边框后生成扫描效果</p></div>}
-        {photo.dirty&&photo.result&&<span className="scan-preview-notice">请应用调整以更新预览</span>}
+    </section><section className="scan-result"><div className="scan-result-heading"><h4>扫描效果</h4><span>{previewError?'预览生成失败':photo.dirty||!photo.result?(rendering?'正在自动更新…':'等待自动更新…'):photo.needsReview?'预览已更新，请核对边框':'预览已更新'}</span></div>
+      <div className={`scan-result-paper${photo.dirty?' scan-result-stale':''}`} aria-busy={photo.dirty||!photo.result}>
+        {resultUrl?<img src={resultUrl} width={photo.result?.width} height={photo.result?.height} alt={`第 ${index+1} 页扫描预览`} loading="lazy"/>:<div className="scan-result-empty"><ScanLine size={32}/><p>正在自动生成扫描效果</p></div>}
+        {photo.dirty&&photo.result&&!previewError&&<span className="scan-preview-notice" role="status">正在自动更新预览…</span>}
       </div>
+      {previewError&&<div className="scan-preview-error" role="alert"><span>{previewError}</span><button className="button" disabled={disabled} onClick={retry}>重试预览</button></div>}
       <fieldset disabled={disabled} className="scan-page-settings"><div className="scan-mode-choices" aria-label="扫描模式">{([{id:'color',label:'彩色扫描'},{id:'bw',label:'黑白文档'},{id:'original',label:'原色保留'}] as const).map(mode=><button key={mode.id} aria-pressed={photo.settings.mode===mode.id} onClick={()=>settings({mode:mode.id})}>{mode.label}</button>)}</div>
         <div className="scan-setting-row"><label>纸张比例<select aria-label={`第 ${index+1} 页纸张比例`} value={photo.settings.paper} onChange={e=>settings({paper:e.target.value as ScanSettings['paper']})}><option value="auto">自动比例（估算）</option><option value="a4">A4 纵向</option><option value="a4-landscape">A4 横向</option><option value="a5">A5 纵向</option></select></label><button className="button" onClick={()=>settings({rotation:(photo.settings.rotation+90)%360})}><RotateCw size={16}/>旋转结果</button></div>
         {photo.settings.mode!=='original'&&<label className="scan-strength">增强程度 <input aria-label={`第 ${index+1} 页增强程度`} type="range" min="0" max="100" value={photo.settings.strength} onChange={e=>settings({strength:Number(e.target.value)})}/><span>{photo.settings.strength}%</span></label>}
-        <button className="button primary full" disabled={!photo.dirty&&!!photo.result&&!photo.needsReview} onClick={apply}>{photo.needsReview?'确认边框，更新预览':photo.result?'应用调整，更新预览':'应用边框，生成预览'}</button>
         <p className="scan-settings-note">彩色扫描保留格线、照片和印章颜色。黑白模式请核对浅色字与细线。</p>
       </fieldset>
     </section></div>
@@ -96,14 +97,15 @@ export default function PhotoScanner({active,onBusy}:{active:boolean;onBusy:(bus
   if(!worker.current)worker.current=new ScanWorker();
   useEffect(()=>()=>{controller.current?.abort();worker.current?.dispose();},[]);
   useEffect(()=>{if(!active)worker.current?.dispose();},[active]);
-  const pending=photos.filter(p=>p.dirty||!p.result||p.needsReview).length,totalSize=photos.reduce((sum,p)=>sum+p.originalSize,0);
+  const {rendering,failures,retry}=useScanPreviews(photos,setPhotos,active&&!busy);
+  const pending=photos.filter(p=>p.dirty||!p.result).length,totalSize=photos.reduce((sum,p)=>sum+p.originalSize,0);
   async function task(action:(signal:AbortSignal)=>Promise<void>) {
     if(controller.current)return;const job=new AbortController();controller.current=job;setBusy('正在准备');setError('');setMessage('');onBusy(true);
     try{await action(job.signal);}catch(error){setError(job.signal.aborted?'已取消，已完成的页面仍保留。':error instanceof Error?error.message:'扫描失败，请重试。');}
     finally{controller.current=null;setBusy('');onBusy(false);}
   }
   function update(id:string,patch:Partial<ScanPhoto>) {setPhotos(previous=>previous.map(p=>p.id===id?{...p,...patch}:p));setMessage('');}
-  async function preview(photo:ScanPhoto,signal:AbortSignal,confirm=false) {const result=await renderScan(photo,worker.current!,1200,setBusy,signal);if(!signal.aborted)update(photo.id,{result,dirty:false,needsReview:confirm?false:photo.needsReview});return result;}
+  async function preview(photo:ScanPhoto,signal:AbortSignal) {const result=await renderScan(photo,worker.current!,1200,setBusy,signal,.94,true);if(!signal.aborted)update(photo.id,{result,dirty:false});return result;}
   async function add(files:File[]) {
     if(!files.length)return;
     await task(async signal=>{
@@ -120,17 +122,17 @@ export default function PhotoScanner({active,onBusy}:{active:boolean;onBusy:(bus
   async function redetect(photo:ScanPhoto) {await task(async signal=>{const result=await worker.current!.call<Detection>('detect',{blob:photo.source},setBusy,signal);if(signal.aborted)return;update(photo.id,{points:copyQuad(result.points),initial:copyQuad(result.points),confidence:result.confidence,warning:result.warning,dirty:true,needsReview:result.confidence!=='detected'});});}
   async function exportPdf() {await task(async signal=>{const result=await scanPdf(photos,worker.current!,quality,limit,setBusy,signal);if(signal.aborted)return;downloadBytes(result.bytes,`${safeStem(name||'拍照扫描')}.pdf`,'application/pdf');setMessage(`已导出 ${photos.length} 页扫描 PDF，${fileSize(result.bytes.byteLength)}。${result.optimized?'已优化图片编码，保持所选分辨率。':''}`);});}
   return <section className="pdf-tools scanner-tool" hidden={!active}>
-    <ToolHeading tool="photo-scan" description="拍照或选择照片，纠正纸张四角，生成清晰的扫描 PDF。"/>
+    <ToolHeading tool="photo-scan" description="拍照或选择照片，上传即生成扫描预览，调整边框、模式和增强程度时自动更新。"/>
     <input ref={input} type="file" accept={ACCEPT} multiple aria-label="选择扫描照片" hidden onChange={e=>{void add(Array.from(e.target.files||[]));e.target.value='';}}/>
     <input ref={camera} type="file" accept="image/*,.heic,.heif" capture="environment" aria-label="拍照扫描纸张" hidden onChange={e=>{void add(Array.from(e.target.files||[]));e.target.value='';}}/>
     <div className="scan-toolbar"><div className="scan-import-buttons"><button className="button primary" disabled={!!busy} onClick={()=>camera.current?.click()}><Camera size={18}/>拍照</button><button className="button" disabled={!!busy} onClick={()=>input.current?.click()}><ImagePlus size={18}/>{photos.length?'添加照片':'选择照片'}</button></div>
-      <span className="scan-total">{photos.length?`${photos.length} 页，${pending?`${pending} 页边框待确认或应用`:'可导出'}`:'支持 JPG、PNG、WebP、HEIC'}</span>
-      <div className="scan-export-buttons">{pending>0&&<button className="button" disabled={!!busy} onClick={()=>void task(async signal=>{for(const photo of photos.filter(p=>p.dirty||!p.result||p.needsReview))await preview(photo,signal,true);})}>确认并应用全部边框</button>}
+      <span className="scan-total">{photos.length?`${photos.length} 页，${pending?`${pending} 页预览自动更新中`:'可导出'}`:'支持 JPG、PNG、WebP、HEIC'}</span>
+      <div className="scan-export-buttons">
       <button className="button primary" disabled={!!busy||!photos.length||pending>0} onClick={exportPdf}><Download size={18}/>导出扫描 PDF</button></div>
     </div>
     {!photos.length?<div className="scan-empty" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();if(!busy)void add(Array.from(e.dataTransfer.files));}}><div className="scan-empty-paper" aria-hidden="true"><span/><span/><span/><span/><i/><i/><i/></div><h3>让照片成为一页扫描件</h3><p>把平整纸张拍完整，尽量让四个角都出现在照片里。</p><button className="button" disabled={!!busy} onClick={()=>input.current?.click()}>选择照片或拖到这里</button><small>照片在浏览器内处理，不上传到服务器。</small></div>:<>
       <div className="scan-export-settings"><label>文件名<input aria-label="扫描 PDF 文件名" value={name} disabled={!!busy} onChange={e=>setName(e.target.value)}/></label><label>清晰度<select aria-label="扫描 PDF 清晰度" value={quality} disabled={!!busy} onChange={e=>setQuality(Number(e.target.value))}><option value={3508}>高清（长边最多 3508 像素）</option><option value={2400}>标准（长边最多 2400 像素）</option></select></label><label className="scan-size-limit"><input type="checkbox" checked={limit} disabled={!!busy} onChange={e=>setLimit(e.target.checked)}/><span>不超过原照片合计大小<small>原照片合计 {fileSize(totalSize)}；无法满足时停止导出</small></span></label></div>
-      <div className="scan-photo-list" aria-label="连续扫描页面">{photos.map((photo,index)=><PhotoCard key={photo.id} photo={photo} index={index} total={photos.length} disabled={!!busy} update={patch=>update(photo.id,patch)} apply={()=>void task(signal=>preview(photo,signal,true).then(()=>{}))} detect={()=>void redetect(photo)} remove={()=>{setPhotos(previous=>previous.filter(p=>p.id!==photo.id));setMessage('');}} move={offset=>setPhotos(previous=>{const next=[...previous];[next[index],next[index+offset]]=[next[index+offset],next[index]];return next;})}/>)}</div>
+      <div className="scan-photo-list" aria-label="连续扫描页面">{photos.map((photo,index)=><PhotoCard key={photo.id} photo={photo} index={index} total={photos.length} disabled={!!busy} rendering={rendering===photo.id} previewError={failures[photo.id]?.key===scanPreviewKey(photo)?failures[photo.id].message:undefined} retry={()=>retry(photo.id)} update={patch=>update(photo.id,patch)} detect={()=>void redetect(photo)} remove={()=>{setPhotos(previous=>previous.filter(p=>p.id!==photo.id));setMessage('');}} move={offset=>setPhotos(previous=>{const next=[...previous];[next[index],next[index+offset]]=[next[index+offset],next[index]];return next;})}/>)}</div>
     </>}
     {busy&&<div className="tool-progress scan-progress" role="status"><div className="spinner"/><span>{busy}</span><button onClick={()=>controller.current?.abort()}>取消</button></div>}
     {error&&<div className="tool-result error" role="alert">{error}<button aria-label="关闭扫描错误" onClick={()=>setError('')}><X size={16}/></button></div>}

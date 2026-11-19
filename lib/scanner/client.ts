@@ -92,9 +92,11 @@ export async function importScanPhoto(file: File, worker: ScanWorker, progress: 
   return { id: image.id, name: file.name, originalSize: file.size, source: normalized, width: image.width, height: image.height, ...detected, initial: copyQuad(detected.points),
     settings:{paper:'auto',mode:'color',strength:85,rotation:0},dirty:true,needsReview:detected.confidence!=='detected' };
 }
-export function renderScan(photo: ScanPhoto, worker: ScanWorker, edge: number, progress: Progress, signal: AbortSignal, quality = .94) {
+export function renderScan(photo: ScanPhoto, worker: ScanWorker, edge: number, progress: Progress, signal: AbortSignal, quality = .94, preview = false) {
   if (!validQuad(photo.points)) throw new Error('四角边框无效，请重新调整。');
-  return worker.call<ScanResult>('render',{blob:photo.source,points:photo.points,...photo.settings,edge,quality},progress,signal);
+  // Interactive previews use the already decoded, smaller detection image.
+  // PDF export retains the original source and its full resolution.
+  return worker.call<ScanResult>('render',{blob:preview?photo.preview:photo.source,points:photo.points,...photo.settings,edge,quality},progress,signal);
 }
 export async function scanPdf(photos: ScanPhoto[], worker: ScanWorker, edge: number, limitSize: boolean, progress: Progress, signal: AbortSignal) {
   if (!photos.length) throw new Error('请先添加照片。');

@@ -28,7 +28,7 @@ The interface is currently in Simplified Chinese. The Chinese labels above match
 | PDF to images | Choose pages and resolution, then export PNG or JPG files. Multiple images can be downloaded as a ZIP. |
 | PDF to PowerPoint | Turn each PDF page into a slide image and export a PPTX. |
 | PDF to Excel | Extract tables or recognize scanned pages. Review the results and export XLSX, or insert each page as an image. |
-| Photo scanner | Import JPG, PNG, WebP or HEIC photos, detect and adjust paper corners, correct perspective, choose color or black-and-white processing, and export multiple pages as a scanned PDF. |
+| Photo scanner | Detect and adjust paper corners in JPG, PNG, WebP, or HEIC photos and correct perspective. Uploads generate previews automatically; corners, color/B&W mode, enhancement, paper ratio, and rotation update the preview without an Apply button. Export multiple pages as a scanned PDF. |
 | Images to PDF | Arrange PNG, JPG/JPEG, WebP, BMP, or GIF images and combine them into a PDF. GIFs use their first frame. |
 | PowerPoint to PDF | Open PPT or PPTX files, preview the slides, and select which ones to export. |
 | Excel to PDF | Open XLS, XLSX, or XLSM files. Select sheets and paper orientation, then export them as PDF pages. |
