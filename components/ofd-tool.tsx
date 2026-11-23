@@ -13,7 +13,7 @@ export default function OfdTool({ active, onBusy }: { active: boolean; onBusy: (
   const [source, setSource] = useState<OfdFile | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [range, setRange] = useState('');
-  const [dpi, setDpi] = useState(180);
+  const [dpi, setDpi] = useState(300);
   const [result, setResult] = useState<Result | null>(null);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
@@ -99,14 +99,14 @@ export default function OfdTool({ active, onBusy }: { active: boolean; onBusy: (
               placeholder="全部页，或 1-3,5" disabled={!source} />
           </label>
           {rangeError && <p className="inline-error" role="alert">{rangeError}</p>}
-          <label className="select-field">清晰度
+          <label className="select-field">图像清晰度
             <select value={dpi} onChange={event => { setDpi(Number(event.target.value)); setResult(null); }}>
-              <option value={130}>较小文件 · 130 DPI</option>
-              <option value={180}>标准 · 180 DPI</option>
-              <option value={240}>高清 · 240 DPI</option>
+              <option value={180}>较小文件 · 180 DPI</option>
+              <option value={300}>清晰 · 300 DPI</option>
+              <option value={400}>高精度 · 最高 400 DPI</option>
             </select>
           </label>
-          <p className="note">导出为图片型 PDF。缺少内嵌字体时会使用替代字体。印章以页面上的外观呈现，验签请使用原 OFD。</p>
+          <p className="note">文字和线条优先保留为矢量轮廓。复杂页面使用无损图像。缺少内嵌字体时使用替代字体，验签请使用原 OFD。</p>
           <button className={result ? 'button full' : 'button primary full'} disabled={!indices.length}
             onClick={convert}>{result ? '重新转换' : '开始转换'}</button>
           {result && source && <button className="button primary full word-download" onClick={() => {
@@ -133,6 +133,6 @@ export default function OfdTool({ active, onBusy }: { active: boolean; onBusy: (
       <button onClick={() => { controller.current?.abort(); setStatus('正在取消…'); }}>取消</button>
     </div>}
     {error && <div className="tool-result error" role="alert">{error}<button aria-label="关闭 OFD 错误" onClick={() => setError('')}><X size={15} /></button></div>}
-    {result && !status && <p className="tool-result" role="status">已生成 {result.pages} 页 PDF（{fileSize(result.bytes.byteLength)}），可下载。</p>}
+    {result && !status && <p className="tool-result" role="status">已生成 {result.pages} 页 PDF（{fileSize(result.bytes.byteLength)}），可下载。{result.rasterPages > 0 && `其中 ${result.rasterPages} 页以无损图像导出。`}</p>}
   </section>;
 }

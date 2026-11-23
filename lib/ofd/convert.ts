@@ -1,13 +1,14 @@
 import type { OFDDocument, OFDPage } from '@ofdrw/ofdrw-viewer-engine';
 import { PDFDocument } from 'pdf-lib';
 import { assetUrl } from '../pdf/asset-url';
-import { yieldToBrowser } from '../pdf/office-common';
+import { canvasBlob, yieldToBrowser } from '../pdf/office-common';
 import { cancelled, type Progress } from '../pdf/tools';
+import { PdfCanvas } from './pdf-canvas';
 
 const MB = 1024 * 1024;
 export const OFD_MAX_FILE_MB = 80;
-const MAX_CANVAS_PIXELS = 8_000_000;
-const MAX_CANVAS_EDGE = 4096;
+const MAX_CANVAS_PIXELS = 12_000_000;
+const MAX_CANVAS_EDGE = 4800;
 const MAX_PDF_IMAGE_BYTES = 160 * MB;
 const POINTS_PER_MM = 72 / 25.4;
 
@@ -68,7 +69,7 @@ async function openExportableDocument(options: OpenOptions, index: number, signa
   }
 }
 
-async function renderPage(page: OFDPage, preferredDpi: number, signal: AbortSignal) {
+function pageGeometry(page: OFDPage, preferredDpi: number) {
   const { width, height } = page.getSize();
   if (![width, height].every(value => Number.isFinite(value) && value > 0 && value * POINTS_PER_MM <= 14400)) {
     throw new Error('此 OFD 页面的尺寸超出 PDF 可导出的范围。');
@@ -76,9 +77,32 @@ async function renderPage(page: OFDPage, preferredDpi: number, signal: AbortSign
   const viewport = page.getViewport({ dpi: preferredDpi });
   const ratio = Math.min(1, (MAX_CANVAS_EDGE - 1) / Math.max(viewport.width, viewport.height),
     Math.sqrt((MAX_CANVAS_PIXELS * .99) / (viewport.width * viewport.height)));
-  const image = await page.exportImage({ dpi: preferredDpi * ratio, format: 'jpeg', quality: .94, background: '#ffffff', signal });
-  cancelled(signal);
-  return { image: image.data, width: width * POINTS_PER_MM, height: height * POINTS_PER_MM };
+  return { viewport: page.getViewport({ dpi: preferredDpi * ratio }), width: width * POINTS_PER_MM, height: height * POINTS_PER_MM };
+}
+
+async function addPdfPage(pdf: PDFDocument, page: OFDPage, dpi: number, signal: AbortSignal) {
+  const { viewport, width, height } = pageGeometry(page, dpi);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+  try {
+    const context = canvas.getContext('2d', { alpha: false });
+    if (!context) throw new Error('无法创建页面画布，请试试较低的清晰度。');
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    const drawing = new PdfCanvas(context);
+    await page.render({ canvasContext: drawing.context, viewport, signal }).promise;
+    cancelled(signal);
+    const output = pdf.addPage([width, height]);
+    const vectorBytes = await drawing.write(pdf, output, 72 / viewport.dpi, signal);
+    if (vectorBytes !== null) return { imageBytes: vectorBytes, raster: false };
+    const png = await canvasBlob(canvas);
+    cancelled(signal);
+    output.drawImage(await pdf.embedPng(await png.arrayBuffer()), { x: 0, y: 0, width, height });
+    return { imageBytes: png.size, raster: true };
+  } finally {
+    canvas.width = canvas.height = 1;
+  }
 }
 
 export async function inspectOfd(file: File, progress: Progress, signal: AbortSignal): Promise<OfdFile> {
@@ -102,8 +126,10 @@ export async function inspectOfd(file: File, progress: Progress, signal: AbortSi
         documentCount = Math.max(1, metadata.packageInfo?.docBodyCount ?? 1);
         if (documentCount > 32) throw new Error('这个 OFD 包含超过 32 个子文档，请拆分后转换。');
         progress('正在生成首页预览…');
-        const rendered = await renderPage(await doc.getPage(0, { signal }), 110, signal);
-        preview = new Blob([new Uint8Array(rendered.image)], { type: 'image/jpeg' });
+        const page = await doc.getPage(0, { signal });
+        const { viewport } = pageGeometry(page, 180);
+        const image = await page.exportImage({ format: 'png', dpi: viewport.dpi, signal });
+        preview = new Blob([new Uint8Array(image.data)], { type: 'image/png' });
       }
     } finally {
       await doc.close();
@@ -119,6 +145,7 @@ export async function ofdToPdf(source: OfdFile, indices: number[], dpi: number, 
   let doc: OFDDocument | undefined;
   let currentSection = -1;
   let imageBytes = 0;
+  let rasterPages = 0;
   try {
     for (const [position, index] of indices.entries()) {
       cancelled(signal);
@@ -136,18 +163,17 @@ export async function ofdToPdf(source: OfdFile, indices: number[], dpi: number, 
         doc = await openExportableDocument(options, section, signal);
         currentSection = section;
       }
-      const { image, width, height } = await renderPage(await doc.getPage(pageIndex, { signal }), dpi, signal);
-      imageBytes += image.byteLength;
+      const added = await addPdfPage(pdf, await doc.getPage(pageIndex, { signal }), dpi, signal);
+      imageBytes += added.imageBytes;
+      if (added.raster) rasterPages++;
       if (imageBytes > MAX_PDF_IMAGE_BYTES) throw new Error('转换结果较大，请降低清晰度或分批转换。');
-      const embedded = await pdf.embedJpg(image);
-      pdf.addPage([width, height]).drawImage(embedded, { x: 0, y: 0, width, height });
       await pdf.flush();
     }
     progress('正在生成 PDF…');
     await yieldToBrowser(signal);
     const bytes = await pdf.save({ useObjectStreams: true });
     cancelled(signal);
-    return { bytes, hasRenderingWarnings: options.hasRenderingWarnings() };
+    return { bytes, rasterPages, hasRenderingWarnings: options.hasRenderingWarnings() };
   } finally {
     await doc?.close();
   }

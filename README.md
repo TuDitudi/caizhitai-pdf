@@ -30,7 +30,7 @@
 | 图片转 PDF | PNG、JPG/JPEG、WebP、BMP 和 GIF 可排序后合成 PDF。GIF 使用首帧。 |
 | PPT 转 PDF | 支持 PPT 和 PPTX，可预览幻灯片并选择导出页。 |
 | Excel 转 PDF | 支持 XLS、XLSX 和 XLSM，可选择工作表和纸张方向，再分页导出。 |
-| OFD 转 PDF | 在浏览器内预览 OFD 首页，选择全部或指定页码，按原页尺寸导出图片型 PDF。电子签名请在原 OFD 中验证。 |
+| OFD 转 PDF | 在浏览器内预览 OFD 首页，选择全部或指定页码，按原页尺寸导出 PDF，文字轮廓和线条优先保留为矢量，复杂页面使用高清无损图像。电子签名请在原 OFD 中验证。 |
 
 ## 裁剪与排版
 

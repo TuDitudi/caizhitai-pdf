@@ -32,7 +32,7 @@ The interface is currently in Simplified Chinese. The Chinese labels above match
 | Images to PDF | Arrange PNG, JPG/JPEG, WebP, BMP, or GIF images and combine them into a PDF. GIFs use their first frame. |
 | PowerPoint to PDF | Open PPT or PPTX files, preview the slides, and select which ones to export. |
 | Excel to PDF | Open XLS, XLSX, or XLSM files. Select sheets and paper orientation, then export them as PDF pages. |
-| OFD to PDF | Preview the first page and export all or selected pages as an image-based PDF at the original page size. Verify signatures using the source OFD. |
+| OFD to PDF | Preview the first page and export all or selected pages as a PDF at the original page size. Text outlines and lines are preserved as vectors where supported, with a high-resolution lossless image fallback for complex pages. Verify signatures using the source OFD. |
 
 ## Crop and resize
 
