@@ -1,8 +1,8 @@
 import type { OFDDocument, OFDPage } from '@ofdrw/ofdrw-viewer-engine';
 import { PDFDocument } from 'pdf-lib';
-import { assetUrl } from '../pdf/asset-url';
 import { canvasBlob, yieldToBrowser } from '../pdf/office-common';
 import { cancelled, type Progress } from '../pdf/tools';
+import { loadDefaultOfdFont, matchSubstituteOfdFont } from './fonts';
 import { PdfCanvas } from './pdf-canvas';
 
 const MB = 1024 * 1024;
@@ -21,21 +21,9 @@ export type OfdFile = {
   hasRenderingWarnings: boolean;
 };
 
-let fallbackFont: Promise<ArrayBuffer> | undefined;
-function getFallbackFont() {
-  fallbackFont ??= fetch(assetUrl('office-assets/NotoSansSC-Regular.ttf')).then(response => {
-    if (!response.ok) throw new Error('中文字体加载失败，请刷新页面后重试。');
-    return response.arrayBuffer();
-  }).catch((error: unknown) => {
-    fallbackFont = undefined;
-    throw error;
-  });
-  return fallbackFont;
-}
-
 async function createOpenOptions(file: File, signal: AbortSignal) {
   const { OFDDocument } = await import('@ofdrw/ofdrw-viewer-engine');
-  const font = await getFallbackFont();
+  const font = await loadDefaultOfdFont();
   cancelled(signal);
   let hasRenderingWarnings = false;
   const renderingWarnings = /^(W_FONT_|W_GLYPH_|W_IMAGE_DECODE|W_JBIG2_|W_UNSUPPORTED_|W_SIGNATURE_|W_BAD_PATH|W_ANNOT_)/;
@@ -47,7 +35,8 @@ async function createOpenOptions(file: File, signal: AbortSignal) {
         signal,
         limits: { maxPackageBytes: OFD_MAX_FILE_MB * MB, maxCanvasPixels: MAX_CANVAS_PIXELS, maxImagePixels: 32_000_000 },
         cache: { pageModels: 2, imageBytes: 24 * MB },
-        defaultFonts: [{ data: font, family: 'Noto Sans SC' }],
+        defaultFonts: [font],
+        fontProvider: { match: matchSubstituteOfdFont },
         strictImageCtm: false,
         onWarning: warning => { if (renderingWarnings.test(warning.code)) hasRenderingWarnings = true; },
       });
