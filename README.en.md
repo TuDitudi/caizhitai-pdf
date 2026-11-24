@@ -38,6 +38,8 @@ The interface is currently in Simplified Chinese. The Chinese labels above match
 
 On desktop, choose a page from the thumbnails on the left. Drag the blue box around the area you want to keep, or enter the margins on the right. On a phone, tap 「查看裁剪设置」 (View crop settings) to jump to the margin controls. Switch to 「缩放排版」 (Scale and layout) to adjust the paper size or spacing.
 
+A **3× magnifier** follows the pointer when you drag a crop corner or edge, so you can line up the blue crop guide with the paper edge. It also appears when you drag page content in 「缩放排版」 (Scale and layout) and closes when you release the mouse button or lift your finger. [Try Crop and resize online](https://tuditudi.github.io/caizhitai-pdf/#/tools/crop)
+
 ![PDF crop editor with page thumbnails on the left, a blue crop box in the center, and crop settings on the right](docs/images/crop-workspace.png)
 
 [View the mobile crop editor](docs/images/crop-mobile.png)
