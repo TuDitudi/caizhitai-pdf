@@ -1,12 +1,13 @@
 'use client';
 import { useState, useRef, useEffect, useEffectEvent, useSyncExternalStore, type PointerEvent } from 'react';
 import { Crop, Upload, Download, RotateCw, Undo2, Redo2, Plus, Minus, ChevronUp, ChevronDown, Trash2, X, Check, SlidersHorizontal, FileText, Expand, Move, ArrowRight, BookOpen, Maximize2, MessageSquareText } from 'lucide-react';
-import { dimensions, fullCrop, layout, marginCrop, MM, rotateEdit, type Edit } from '../lib/pdf/geometry';
+import { dimensions, fullCrop, layout, marginCrop, MM, rotateEdit, type Crop as CropRect, type Edit } from '../lib/pdf/geometry';
 import { openPdf, renderPage, demoPdf, exportPdf } from '../lib/pdf/engine';
 import { fileSize, byteLimit, checkSize } from '../lib/pdf/export';
 import PdfTools, {type ToolTab} from '../components/pdf-tools';
 import { MobileDock, ToolDirectory, ToolNav, WorkspaceSearch, toolFromHash, toolHref, toolLabel } from '../components/tool-navigation';
 import { ToolFilePanel, ToolHeading } from '../components/tool-workspace';
+import { PdfAdjustmentLoupe, type AdjustmentHandle, type AdjustmentPreview } from '../components/pdf-adjustment-loupe';
 import './navigation.css';
 import './workspace.css';
 
@@ -18,6 +19,19 @@ const readToolRoute = () => toolFromHash(window.location.hash);
 const homeRoute = () => null;
 const copy = (a:Edit[]) => structuredClone(a);
 const clamp = (n:number, a:number, b:number) => Math.max(a,Math.min(b,n));
+type AdjustmentGesture = {
+ handle: AdjustmentHandle;
+ pointerId: number;
+ target: HTMLDivElement;
+ x: number;
+ y: number;
+ rect: DOMRectReadOnly;
+ crop: CropRect;
+ before: Edit[];
+ latest: Edit[];
+ edit: Edit;
+};
+const cropHandles = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'] as const;
 function NumberField({label,value,onChange,min=0,max=1000,unit='mm'}:{label:string;value:number;onChange:(n:number)=>void;min?:number;max?:number;unit?:string}) {
  return <label className="number-field"><span>{label}</span><div><input aria-label={label} type="number" min={min} max={max} step="0.1" value={Math.round(value*10)/10} onChange={e=>{if(e.target.value!==''&&Number.isFinite(e.target.valueAsNumber))onChange(clamp(e.target.valueAsNumber,min,max));}}/><small>{unit}</small></div></label>;
 }
@@ -32,7 +46,8 @@ export default function Home({ feedbackUrl }: { feedbackUrl?: string } = {}) {
  const firstScreen=useRef(true);
  const [doc,setDoc]=useState<any>(null),[edits,setEdits]=useState<Edit[]>([]),[active,setActive]=useState(0),[name,setName]=useState(''),[busy,setBusy]=useState(''),[toast,setToast]=useState(''),[error,setError]=useState(''),[mode,setMode]=useState<'crop'|'layout'>('crop'),[raw,setRaw]=useState<HTMLCanvasElement|null>(null),[rendering,setRendering]=useState(false),[modal,setModal]=useState(false),[help,setHelp]=useState(false),[allowCompression,setAllowCompression]=useState(true),[originalSize,setOriginalSize]=useState(0),[scope,setScope]=useState('all'),[zoom,setZoom]=useState(1),[dragOver,setDragOver]=useState(false),[historyTick,setHistoryTick]=useState(0);
  const settings=useRef<HTMLElement>(null);
- const input=useRef<HTMLInputElement>(null),paper=useRef<HTMLDivElement>(null),view=useRef<HTMLCanvasElement>(null),history=useRef<Edit[][]>([]),future=useRef<Edit[][]>([]),editsRef=useRef(edits),gesture=useRef<any>(null),busyRef=useRef(false),docRef=useRef<any>(null),sourceBytes=useRef<Uint8Array|null>(null);
+ const [adjustmentPreview, setAdjustmentPreview] = useState<AdjustmentPreview | null>(null);
+ const input=useRef<HTMLInputElement>(null),paper=useRef<HTMLDivElement>(null),view=useRef<HTMLCanvasElement>(null),history=useRef<Edit[][]>([]),future=useRef<Edit[][]>([]),editsRef=useRef(edits),gesture=useRef<AdjustmentGesture | null>(null),busyRef=useRef(false),docRef=useRef<any>(null),sourceBytes=useRef<Uint8Array|null>(null);
  editsRef.current=edits; const e=edits.find(p=>p.id===active)||edits[0],idx=edits.indexOf(e),d=e?dimensions(e):{w:595,h:842},l=e?layout(e):null;
  function remember(previous:Edit[]){history.current.push(copy(previous));if(history.current.length>60)history.current.shift();future.current=[];setHistoryTick(t=>t+1);}
  function commit(next:Edit[]){if(JSON.stringify(next)===JSON.stringify(editsRef.current))return;remember(editsRef.current);setEdits(next);}
@@ -54,10 +69,96 @@ export default function Home({ feedbackUrl }: { feedbackUrl?: string } = {}) {
  async function selectFile(file?:File){if(!file||busyRef.current)return;if(!file.name.toLowerCase().endsWith('.pdf')){setError('请选择 .pdf 文件。');return;}if(file.size>200*1024*1024){setError('当前支持 200 MB 以内的 PDF，请先拆分较大的文件。');return;}if(edits.length&&history.current.length&&!window.confirm('打开新的 PDF 会替换当前未导出的编辑，继续吗？'))return;busyRef.current=true;setBusy('正在打开文件…');try{await load(new Uint8Array(await file.arrayBuffer()),file.name);}catch{setError('文件读取失败，请重试。');setBusy('');busyRef.current=false;}}
  async function demo(){if(busyRef.current)return;busyRef.current=true;setBusy('正在准备示例扫描件…');try{await load(await demoPdf(),'扫描手记 · 示例.pdf');}catch{setBusy('');busyRef.current=false;setError('示例生成失败，请重新尝试。');}}
  useEffect(()=>{let live=true;setRaw(null);if(!doc||!e)return;setRendering(true);renderPage(doc,e.source,e.rotation,1800).then(c=>{if(live){setRaw(c);setRendering(false);}}).catch(()=>{if(live){setError('页面预览失败，请重新导入文件。');setRendering(false);}});return()=>{live=false;};},[doc,e?.source,e?.rotation]);
- useEffect(()=>{if(!raw||!e||!view.current)return;const c=view.current,ctx=c.getContext('2d')!;if(mode==='crop'){c.width=raw.width;c.height=raw.height;ctx.drawImage(raw,0,0);}else{const ll=layout(e),ratio=1400/Math.max(ll.w,ll.h);c.width=Math.ceil(ll.w*ratio);c.height=Math.ceil(ll.h*ratio);ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);const a=e.crop;ctx.drawImage(raw,raw.width*a.x,raw.height*a.y,raw.width*a.w,raw.height*a.h,ll.x*ratio,ll.y*ratio,ll.iw*ratio,ll.ih*ratio);}},[raw,e,mode]);
- function start(ev:PointerEvent<HTMLDivElement>,handle:string){if(!e||!raw||rendering)return;ev.preventDefault();ev.stopPropagation();ev.currentTarget.setPointerCapture(ev.pointerId);const rect=paper.current!.getBoundingClientRect();gesture.current={handle,x:ev.clientX,y:ev.clientY,rect,c:{...e.crop},before:copy(edits),id:e.id,offsetX:e.offsetX,offsetY:e.offsetY};}
- function move(ev:PointerEvent<HTMLDivElement>){const g=gesture.current;if(!g)return;const dx=(ev.clientX-g.x)/g.rect.width,dy=(ev.clientY-g.y)/g.rect.height;if(g.handle==='content'){const ll=layout(e);setEdits(g.before.map((a:Edit)=>a.id===g.id?{...a,offsetX:clamp(g.offsetX+dx*ll.w/MM,-500,500),offsetY:clamp(g.offsetY+dy*ll.h/MM,-500,500)}:a));return;}const c=g.c;let x=c.x,y=c.y,r=c.x+c.w,b=c.y+c.h;const h=g.handle;if(h==='move'){x=clamp(c.x+dx,0,1-c.w);y=clamp(c.y+dy,0,1-c.h);r=x+c.w;b=y+c.h;}else{if(h.includes('w'))x=clamp(c.x+dx,0,r-.01);if(h.includes('e'))r=clamp(r+dx,x+.01,1);if(h.includes('n'))y=clamp(c.y+dy,0,b-.01);if(h.includes('s'))b=clamp(b+dy,y+.01,1);}setEdits(g.before.map((a:Edit)=>a.id===g.id?{...a,crop:{x,y,w:r-x,h:b-y}}:a));}
- function end(){const g=gesture.current;if(g){if(JSON.stringify(g.before)!==JSON.stringify(editsRef.current))remember(g.before);gesture.current=null;}}
+ // The crop view can reuse the original pixels while only the selection changes.
+ useEffect(() => {
+  const canvas = view.current;
+  if (!raw || !canvas || mode !== 'crop') return;
+  canvas.width = raw.width;
+  canvas.height = raw.height;
+  canvas.getContext('2d')!.drawImage(raw, 0, 0);
+ }, [raw, mode]);
+ useEffect(() => {
+  const canvas = view.current;
+  if (!raw || !e || !canvas || mode !== 'layout') return;
+  const ll = layout(e);
+  const scale = 1400 / Math.max(ll.w, ll.h);
+  const width = Math.ceil(ll.w * scale);
+  const height = Math.ceil(ll.h * scale);
+  if (canvas.width !== width) canvas.width = width;
+  if (canvas.height !== height) canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, width, height);
+  const { x, y, w, h } = e.crop;
+  ctx.drawImage(raw, raw.width*x, raw.height*y, raw.width*w, raw.height*h,
+    ll.x*scale, ll.y*scale, ll.iw*scale, ll.ih*scale);
+ }, [raw, e, mode]);
+
+ function start(event: PointerEvent<HTMLDivElement>, handle: AdjustmentHandle) {
+  if (event.button !== 0 || gesture.current || !e || !raw || !paper.current || rendering) return;
+  const rect = paper.current.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const { currentTarget: target, pointerId, clientX: x, clientY: y } = event;
+  target.setPointerCapture(pointerId);
+  const before = copy(edits);
+  gesture.current = { handle, pointerId, target, x, y, rect, crop: e.crop, before, latest: before, edit: e };
+  setAdjustmentPreview({ handle, pointer: { x, y }, page: rect });
+ }
+
+ function move(event: PointerEvent<HTMLDivElement>) {
+  const g = gesture.current;
+  if (!g || g.pointerId !== event.pointerId) return;
+  const { clientX, clientY } = event;
+  const dx = (clientX - g.x) / g.rect.width;
+  const dy = (clientY - g.y) / g.rect.height;
+  const { handle, crop, edit } = g;
+  let patch: Partial<Edit>;
+  if (handle === 'content') {
+   const { w, h } = layout(edit);
+   patch = { offsetX: clamp(edit.offsetX + dx*w/MM, -500, 500), offsetY: clamp(edit.offsetY + dy*h/MM, -500, 500) };
+  } else {
+   let { x, y } = crop;
+   let right = x + crop.w, bottom = y + crop.h;
+   if (handle === 'move') {
+    x = clamp(x + dx, 0, 1 - crop.w);
+    y = clamp(y + dy, 0, 1 - crop.h);
+    right = x + crop.w;
+    bottom = y + crop.h;
+   } else {
+    if (handle.includes('w')) x = clamp(x + dx, 0, right - .01);
+    if (handle.includes('e')) right = clamp(right + dx, x + .01, 1);
+    if (handle.includes('n')) y = clamp(y + dy, 0, bottom - .01);
+    if (handle.includes('s')) bottom = clamp(bottom + dy, y + .01, 1);
+   }
+   patch = { crop: { x, y, w: right - x, h: bottom - y } };
+  }
+  g.latest = g.before.map(item => item.id === edit.id ? { ...item, ...patch } : item);
+  setEdits(g.latest);
+  setAdjustmentPreview({ handle, pointer: { x: clientX, y: clientY }, page: g.rect });
+ }
+
+ function finishAdjustment(pointerId?: number) {
+  const g = gesture.current;
+  if (!g || (pointerId !== undefined && g.pointerId !== pointerId)) return;
+  gesture.current = null;
+  setAdjustmentPreview(null);
+  if (g.target.hasPointerCapture(g.pointerId)) g.target.releasePointerCapture(g.pointerId);
+  if (JSON.stringify(g.before) !== JSON.stringify(g.latest)) remember(g.before);
+ }
+ function end(event: PointerEvent<HTMLDivElement>) { finishAdjustment(event.pointerId); }
+ const stopAdjustment = useEffectEvent(() => finishAdjustment());
+ useEffect(() => {
+  const blur = () => stopAdjustment();
+  const keydown = (event: KeyboardEvent) => { if (event.key === 'Escape') stopAdjustment(); };
+  window.addEventListener('blur', blur);
+  window.addEventListener('keydown', keydown);
+  return () => {
+   window.removeEventListener('blur', blur);
+   window.removeEventListener('keydown', keydown);
+  };
+ }, []);
  function movePage(delta:number){const a=[...edits];[a[idx],a[idx+delta]]=[a[idx+delta],a[idx]];commit(a);}
  function applyAll(){if(!e)return;commit(edits.map(a=>({...a,crop:{...e.crop},paper:e.paper,customW:e.customW,customH:e.customH,margin:e.margin,scale:e.scale,offsetX:e.offsetX,offsetY:e.offsetY})));setToast('已将裁剪比例与排版设置应用到全部页面；各页旋转角度保留。');}
  async function download(){if(!doc||busyRef.current)return;busyRef.current=true;setModal(false);setError('');try{const limit=byteLimit(originalSize);const result=await exportPdf(doc,scope==='current'?[e]:edits,{source:sourceBytes.current!,maxBytes:limit,allowCompression},setBusy);checkSize(result.bytes,limit);const blob=new Blob([result.bytes as BlobPart],{type:'application/pdf'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${name.replace(/\.pdf$/i,'')}-已裁剪.pdf`;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);setToast(`已导出 ${fileSize(result.bytes.byteLength)}（原文件 ${fileSize(originalSize)}）。${result.method==='original'?'保留原始清晰度。':'已压缩图像，请检查文字清晰度。'}`);}catch(err:any){setError(err?.message||'导出失败，请选择“仅当前页”后重试。');}finally{setBusy('');busyRef.current=false;}}
@@ -129,9 +230,10 @@ export default function Home({ feedbackUrl }: { feedbackUrl?: string } = {}) {
   <div className="page-actions"><button title="页面上移" aria-label="页面上移" disabled={idx<=0} onClick={()=>movePage(-1)}><ChevronUp size={17}/></button><button title="页面下移" aria-label="页面下移" disabled={idx>=edits.length-1} onClick={()=>movePage(1)}><ChevronDown size={17}/></button><button title="删除当前页" aria-label="删除当前页" disabled={edits.length<=1} onClick={()=>{commit(edits.filter(a=>a.id!==e.id));setActive(edits[idx===edits.length-1?idx-1:idx+1].id);}}><Trash2 size={16}/></button></div>
  </aside>
  <section className="editor"><div className="toolbar"><div className="segmented"><button className={mode==='crop'?'active':''} aria-pressed={mode==='crop'} onClick={()=>setMode('crop')}><Crop size={16}/>裁剪边框</button><button className={mode==='layout'?'active':''} aria-pressed={mode==='layout'} onClick={()=>setMode('layout')}><Expand size={16}/>缩放排版</button></div><div className="tools"><button title="撤销 (⌘/Ctrl Z)" aria-label="撤销" disabled={!history.current.length||!!busy} onClick={undo}><Undo2 size={17}/></button><button title="重做" aria-label="重做" disabled={!future.current.length||!!busy} onClick={redo}><Redo2 size={17}/></button><span className="divider"/><button title="顺时针旋转 90°" aria-label="顺时针旋转 90 度" disabled={!e} onClick={()=>commit(edits.map(a=>a.id===e.id?rotateEdit(a):a))}><RotateCw size={17}/></button></div></div>
+ {tool==='crop'&&raw&&e&&adjustmentPreview&&<PdfAdjustmentLoupe source={raw} preview={adjustmentPreview} edit={e}/>}
  <button type="button" className="crop-settings-jump" onClick={()=>{settings.current?.scrollIntoView({block:'start'});settings.current?.focus({preventScroll:true});}}><SlidersHorizontal size={15} aria-hidden="true" />{mode==='crop'?'查看裁剪设置':'查看排版设置'}</button>
  <div className="stage">
- <div className="canvas-label"><span>第 {idx+1} 页 / 共 {edits.length} 页</span><span>{mode==='crop'?'蓝框内的内容将被保留':'导出效果预览'}</span></div><div className="paper-space"><div ref={paper} className={`paper ${mode==='layout'?'layout-paper':''}`} style={{aspectRatio:ratio,width:`min(${zoom*100}%, calc(var(--paper-height) * ${ratio} * ${zoom}))`,minWidth:zoom>1?`min(${zoom*100}%, calc(var(--paper-height) * ${ratio} * ${zoom}))`:undefined}} onPointerDown={mode==='layout'?(ev)=>start(ev,'content'):undefined} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end}><canvas ref={view} style={{visibility:raw?'visible':'hidden'}}/>{rendering&&<div className="rendering">正在绘制页面…</div>}{raw&&mode==='crop'&&<div className="crop-overlay"><div className="crop-box" style={{left:`${e.crop.x*100}%`,top:`${e.crop.y*100}%`,width:`${e.crop.w*100}%`,height:`${e.crop.h*100}%`}} onPointerDown={ev=>start(ev,'move')}><div className="crop-grid"/><span className="crop-size">{(d.w*e.crop.w/MM).toFixed(1)} × {(d.h*e.crop.h/MM).toFixed(1)} mm</span>{['nw','n','ne','e','se','s','sw','w'].map(h=><div key={h} className={`handle handle-${h}`} onPointerDown={ev=>start(ev,h)}/>)}</div></div>}</div></div><div className="canvas-tip">{mode==='crop'?<Crop size={14}/>:<Move size={14}/>}<span>{mode==='crop'?'拖动角点或边线裁剪 · 拖动选框移动区域':'拖动纸面移动内容 · 右侧调整大小与留白'}</span></div>
+ <div className="canvas-label"><span>第 {idx+1} 页 / 共 {edits.length} 页</span><span>{mode==='crop'?'蓝框内的内容将被保留':'导出效果预览'}</span></div><div className="paper-space"><div ref={paper} className={`paper ${mode==='layout'?'layout-paper':''}`} style={{aspectRatio:ratio,width:`min(${zoom*100}%, calc(var(--paper-height) * ${ratio} * ${zoom}))`,minWidth:zoom>1?`min(${zoom*100}%, calc(var(--paper-height) * ${ratio} * ${zoom}))`:undefined}} onPointerDown={mode==='layout'?(ev)=>start(ev,'content'):undefined} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end}><canvas ref={view} style={{visibility:raw?'visible':'hidden'}}/>{rendering&&<div className="rendering">正在绘制页面…</div>}{raw&&mode==='crop'&&<div className="crop-overlay"><div className="crop-box" style={{left:`${e.crop.x*100}%`,top:`${e.crop.y*100}%`,width:`${e.crop.w*100}%`,height:`${e.crop.h*100}%`}} onPointerDown={ev=>start(ev,'move')}><div className="crop-grid"/><span className="crop-size">{(d.w*e.crop.w/MM).toFixed(1)} × {(d.h*e.crop.h/MM).toFixed(1)} mm</span>{cropHandles.map(h=><div key={h} className={`handle handle-${h}`} onPointerDown={ev=>start(ev,h)}/>)}</div></div>}</div></div><div className="canvas-tip">{mode==='crop'?<Crop size={14}/>:<Move size={14}/>}<span>{mode==='crop'?'拖动角点或边线裁剪 · 拖动选框移动区域':'拖动纸面移动内容 · 右侧调整大小与留白'}</span></div>
  </div><footer className="editor-footer"><span><span className="status-dot"/>编辑仅保存在当前窗口</span><div className="zoom"><button aria-label="缩小预览" disabled={!doc||zoom<=.5} onClick={()=>setZoom(clamp(zoom-.25,.5,2))}><Minus size={14}/></button><button onClick={()=>setZoom(1)} disabled={!doc} title="适合窗口">{Math.round(zoom*100)}%</button><button aria-label="放大预览" disabled={!doc||zoom>=2} onClick={()=>setZoom(clamp(zoom+.25,.5,2))}><Plus size={14}/></button></div></footer></section>
  <aside className="settings" ref={settings} tabIndex={-1}><div className="panel-heading"><h2>{mode==='crop'?'裁剪设置':'排版设置'}</h2><SlidersHorizontal size={17}/></div><div className="settings-body"><div className="settings-intro"><span className="step-icon">{mode==='crop'?<Crop size={20}/>:<Expand size={20}/>}</span><h3>{mode==='crop'?'留下你需要的区域':'给内容合适的空间'}</h3><p>{mode==='crop'?'拖动蓝色边框，也可以输入精确数值。':'裁剪后的内容会等比缩放，不会拉伸变形。'}</p></div>
  <fieldset disabled={!e||!!busy}>{mode==='crop'?<><div className="section-label">裁去的边距 <span>毫米</span></div><div className="number-grid">{(['top','bottom','left','right'] as const).map((s,i)=><NumberField key={s} label={['上边','下边','左边','右边'][i]} value={e?({top:e.crop.y*d.h,bottom:(1-e.crop.y-e.crop.h)*d.h,left:e.crop.x*d.w,right:(1-e.crop.x-e.crop.w)*d.w}[s])/MM:0} max={(s==='top'||s==='bottom'?d.h:d.w)/MM} onChange={n=>patch({crop:marginCrop(e,s,n)})}/>)}</div><button className="button full subtle" onClick={()=>patch({crop:fullCrop()})}><Maximize2 size={15}/>恢复完整页面</button><div className="measure"><span>保留区域</span><strong>{e?`${(d.w*e.crop.w/MM).toFixed(1)} × ${(d.h*e.crop.h/MM).toFixed(1)}`:'— × —'} <small>mm</small></strong></div><div className="note"><span className="note-dot"/>裁剪后可切换到「缩放排版」，将扫描内容放大、缩小或放到 A4 纸上。</div><button className="button full" onClick={()=>setMode('layout')}>下一步：调整大小 <ArrowRight size={15}/></button></>:<><label className="select-field">输出纸张<select value={e?.paper||'crop'} onChange={ev=>patch({paper:ev.target.value})}><option value="crop">随裁剪区域大小</option><option value="original">原始纸张大小</option><option value="a4">A4 纵向 · 210 × 297 mm</option><option value="a4-landscape">A4 横向 · 297 × 210 mm</option><option value="custom">自定义尺寸</option></select></label>{e?.paper==='custom'&&<div className="number-grid"><NumberField label="纸张宽度" value={e.customW} min={10} max={1000} onChange={n=>patch({customW:n})}/><NumberField label="纸张高度" value={e.customH} min={10} max={1000} onChange={n=>patch({customH:n})}/></div>}<div className="slider-label"><label htmlFor="scale">内容缩放</label><strong>{e?.scale||100}%</strong></div><input id="scale" className="range" type="range" min="10" max="200" value={e?.scale||100} onChange={ev=>patch({scale:Number(ev.target.value)})}/><div className="range-labels"><span>10%</span><span>适合纸张 100%</span><span>200%</span></div><NumberField label="四周留白" value={e?.margin||0} max={e?Math.max(0,Math.floor(Math.min(l!.w,l!.h)/MM/2)-1):100} onChange={n=>patch({margin:n})}/><div className="section-label">内容位置 <span>相对居中</span></div><div className="number-grid"><NumberField label="水平偏移" value={e?.offsetX||0} min={-500} max={500} onChange={n=>patch({offsetX:n})}/><NumberField label="垂直偏移" value={e?.offsetY||0} min={-500} max={500} onChange={n=>patch({offsetY:n})}/></div><button className="button full subtle" onClick={()=>patch({scale:100,offsetX:0,offsetY:0})}><Expand size={15}/>适合纸张并居中</button>{l?.clipped&&<div className="warning">部分内容超出纸张边界，导出时会被切掉。请缩小或移动内容。</div>}<div className="measure"><span>导出纸张尺寸</span><strong>{l?`${(l.w/MM).toFixed(1)} × ${(l.h/MM).toFixed(1)}`:'— × —'} <small>mm</small></strong></div></>}
