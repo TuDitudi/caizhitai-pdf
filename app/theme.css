@@ -1,0 +1,78 @@
+:root {
+  color-scheme: light;
+  --ui-ink: #132137;
+  --ui-muted: #50617a;
+  --ui-blue: #115bc4;
+  --ui-blue-hover: #0d4ca7;
+  --ui-blue-tint: #eaf2ff;
+  --ui-background: #f2f4f8;
+  --ui-surface: #fff;
+  --ui-fill: #edf1f7;
+  --ui-line: #dce4ee;
+  --ui-radius: 18px;
+  --ui-wide: 1250px;
+  --ui-gutter: max(clamp(16px, 3.5vw, 38px), env(safe-area-inset-left), env(safe-area-inset-right));
+  --ui-popover-shadow: 0 14px 36px #1d2f4c2b;
+}
+
+html, body {
+  color: var(--ui-ink);
+  background: var(--ui-background);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+}
+::selection { background: #d6e7ff; color: #143866; }
+
+.app .button {
+  min-height: 44px;
+  padding-inline: 15px;
+  border-color: var(--ui-line);
+  border-radius: 12px;
+  background: var(--ui-surface);
+  color: var(--ui-ink);
+  font-weight: 650;
+  font-size: 13px;
+  line-height: 1.35;
+  filter: none;
+}
+.app .button.subtle { background: var(--ui-fill); }
+.app .button:hover:not(:disabled) { background: #f0f5fc; border-color: #b4cceb; }
+.app .button.primary {
+  border-color: var(--ui-blue);
+  border-radius: 999px;
+  background: var(--ui-blue);
+  color: #fff;
+  box-shadow: none;
+}
+.app .button.primary:hover:not(:disabled) { border-color: var(--ui-blue-hover); background: var(--ui-blue-hover); }
+.app .button.primary:disabled {
+  background: var(--ui-fill);
+  border-color: var(--ui-line);
+  color: #5f6f85;
+  opacity: 1;
+}
+.app :is(button, a, input, select, textarea, summary):focus-visible {
+  outline-color: var(--ui-blue);
+}
+.app .tool-search-field input:focus-visible { outline: none; }
+
+.app :is(.select-field, .number-field) :is(select, input:not([type='range']), textarea) {
+  border-radius: 10px;
+  color: var(--ui-ink);
+  accent-color: var(--ui-blue);
+}
+.app :is(.number-field input, .select-field input) { font-variant-numeric: tabular-nums; }
+.app input[type='range'], .app input[type='checkbox'] { accent-color: var(--ui-blue); }
+.app .note { color: var(--ui-muted); }
+
+.app .scrim { background: #1e2e475b; }
+.app .modal { border-radius: 24px; color: var(--ui-ink); }
+.app .modal-close { border-radius: 50%; background: var(--ui-fill); min-width: 44px; min-height: 44px; }
+.app .modal-icon { color: var(--ui-blue); background: var(--ui-blue-tint); border-radius: 16px; }
+
+@media (max-width: 840px) {
+  .app .top-actions .button { font-size: 12px; }
+  .app :is(.tool-result, .warning) { overflow-wrap: anywhere; }
+  .app .scrim:not(.busy) { align-items: end; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+  .app .modal { margin-inline: auto; }
+  .app :is(.toast, .error-toast, .scan-progress, .tool-progress) { bottom: calc(78px + env(safe-area-inset-bottom)); }
+}

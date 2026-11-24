@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import {
-  ArrowRight, Camera, BookOpen, ChevronDown, ChevronRight, Crop, FileImage, FileText, Files,
+  Camera, BookOpen, ChevronDown, ChevronRight, Crop, FileImage, FileText, Files, LayoutGrid, MessageSquareText,
   Image, Presentation, Scissors, Search, ShieldCheck, Table2, X, type LucideIcon,
 } from 'lucide-react';
 import type { ToolTab } from './pdf-tools';
@@ -72,21 +72,31 @@ function searchTools(value: string) {
   }).filter(match => match.score > 0).sort((a, b) => b.score - a.score).map(match => match.tool);
 }
 
-function SearchField({ value, onChange, onSubmit, placeholder, disabled }: {
+function SearchField({ value, onChange, onSubmit, placeholder, disabled, inputId }: {
   value: string;
   onChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   placeholder: string;
   disabled?: boolean;
+  inputId?: string;
 }) {
   const input = useRef<HTMLInputElement>(null);
   return <form className="tool-search-field" role="search" onSubmit={onSubmit}>
     <Search size={19} aria-hidden="true" />
-    <input ref={input} type="search" aria-label="搜索工具" placeholder={placeholder} value={value}
+    <input ref={input} id={inputId} type="search" aria-label="搜索工具" placeholder={placeholder} value={value}
       autoComplete="off" disabled={disabled} onChange={event => onChange(event.target.value)} />
     {value && <button type="button" aria-label="清空搜索" disabled={disabled}
       onClick={() => { onChange(''); input.current?.focus(); }}><X size={17} /></button>}
   </form>;
+}
+
+function SearchMatches({ results, onChoose }: { results: ToolEntry[]; onChoose: () => void }) {
+  if (!results.length) return <p role="status">没找到匹配的工具。试试「合并」或「图片」。</p>;
+  return <ul aria-label="工具搜索结果">{results.map(tool => <li key={tool.id}>
+    <a href={toolHref(tool.id)} onClick={onChoose}>
+      <tool.icon size={18} aria-hidden="true" />{tool.label}<ChevronRight size={16} aria-hidden="true" />
+    </a>
+  </li>)}</ul>;
 }
 
 export function WorkspaceSearch({ disabled }: { disabled: boolean }) {
@@ -121,9 +131,7 @@ export function WorkspaceSearch({ disabled }: { disabled: boolean }) {
     <SearchField value={query} onChange={value => { setQuery(value); setOpen(true); }}
       placeholder="搜索工具" onSubmit={submit} disabled={disabled} />
     {open && !disabled && <div className="workspace-search-results">
-      {results.length ? <ul aria-label="工具搜索结果">{results.map(tool => <li key={tool.id}>
-        <a href={toolHref(tool.id)} onClick={() => setOpen(false)}><tool.icon size={17} aria-hidden="true" />{tool.label}<ChevronRight size={15} aria-hidden="true" /></a>
-      </li>)}</ul> : <p role="status">没找到匹配的工具。试试「合并」或「图片」。</p>}
+      <SearchMatches results={results} onChoose={() => setOpen(false)} />
     </div>}
   </div>;
 }
@@ -131,25 +139,19 @@ export function WorkspaceSearch({ disabled }: { disabled: boolean }) {
 export function ToolNav({ active, disabled }: { active: ToolTab; disabled: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const toggle = useRef<HTMLButtonElement>(null);
-  const current = useRef<HTMLAnchorElement>(null);
 
-  useEffect(() => { current.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }, [active]);
-
-  return <div className="tool-switcher" data-expanded={expanded} onKeyDown={event => {
+  return <div className="tool-switcher" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setExpanded(false); }} onKeyDown={event => {
     if (event.key === 'Escape' && expanded) {
       setExpanded(false);
       toggle.current?.focus();
     }
   }}>
-    <div className="tool-switcher-bar">
-      <span className="tool-switcher-current">{toolLabel(active)}</span>
       <button ref={toggle} className="tool-switcher-toggle" type="button" disabled={disabled}
-        aria-expanded={expanded} aria-controls="workspace-tool-links" onClick={() => setExpanded(!expanded)}>
-        切换工具 <ChevronDown size={16} aria-hidden="true" />
+        aria-label={`切换工具，当前为${toolLabel(active)}`} aria-expanded={expanded} aria-controls="workspace-tool-links" onClick={() => setExpanded(previous => !previous)}>
+        {toolLabel(active)} <ChevronDown size={15} aria-hidden="true" />
       </button>
-    </div>
-    <nav className="feature-nav" id="workspace-tool-links" aria-label="PDF 功能">
-      {tools.map(tool => <a key={tool.id} href={toolHref(tool.id)} ref={active === tool.id ? current : undefined}
+    <nav className="feature-nav" id="workspace-tool-links" aria-label="切换工具" hidden={!expanded}>
+      {tools.map(tool => <a key={tool.id} href={toolHref(tool.id)}
         aria-current={active === tool.id ? 'page' : undefined} aria-disabled={disabled || undefined}
         tabIndex={disabled ? -1 : undefined} onClick={event => {
           if (disabled) event.preventDefault();
@@ -160,6 +162,57 @@ export function ToolNav({ active, disabled }: { active: ToolTab; disabled: boole
         }}><tool.icon size={15} aria-hidden="true" />{tool.label}</a>)}
     </nav>
   </div>;
+}
+
+export function MobileDock({ home, disabled, feedback }: {
+  home: boolean;
+  disabled: boolean;
+  feedback?: string;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [query, setQuery] = useState('');
+  const results = searchTools(query);
+
+  function openSearch() {
+    const homeInput = home ? document.getElementById('directory-search') : null;
+    if (homeInput) {
+      homeInput.focus();
+      return;
+    }
+    setQuery('');
+    dialog.current?.showModal();
+    dialog.current?.querySelector('input')?.focus();
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (disabled || !results.length) return;
+    window.location.hash = toolHref(results[0].id);
+    dialog.current?.close();
+  }
+
+  return <>
+    <nav className="mobile-dock" aria-label="主导航">
+      <a href={toolHref(null)} aria-current={home ? 'page' : undefined} aria-disabled={disabled || undefined}
+        tabIndex={disabled ? -1 : undefined} onClick={event => { if (disabled) event.preventDefault(); }}>
+        <LayoutGrid size={21} aria-hidden="true" />工具
+      </a>
+      <button type="button" disabled={disabled} onClick={openSearch}><Search size={21} aria-hidden="true" />搜索</button>
+      {feedback && <a href={feedback} target="_blank" rel="noopener noreferrer" aria-label="意见与反馈">
+        <MessageSquareText size={21} aria-hidden="true" />反馈
+      </a>}
+    </nav>
+    <dialog ref={dialog} className="mobile-search-sheet" aria-labelledby="mobile-search-title">
+      <div className="mobile-search-header">
+        <h2 id="mobile-search-title">搜索工具</h2>
+        <button type="button" className="icon-button" onClick={() => dialog.current?.close()} aria-label="关闭搜索"><X size={21} /></button>
+      </div>
+      <SearchField value={query} onChange={setQuery} onSubmit={submit} placeholder="搜索裁剪、JPG、Word…" disabled={disabled} />
+      <div className="mobile-search-results">
+        <SearchMatches results={results} onChoose={() => dialog.current?.close()} />
+      </div>
+    </dialog>
+  </>;
 }
 
 export function ToolDirectory() {
@@ -177,7 +230,7 @@ export function ToolDirectory() {
       <a className="directory-tool" href={toolHref(tool.id)} aria-label={tool.label}>
         <span className="directory-tool-icon"><tool.icon size={20} aria-hidden="true" /></span>
         <span className="directory-tool-text"><strong>{tool.label}</strong><span>{tool.description}</span></span>
-        <ArrowRight size={16} className="directory-arrow" aria-hidden="true" />
+        <ChevronRight size={16} className="directory-arrow" aria-hidden="true" />
       </a>
     </li>;
   }
@@ -186,22 +239,21 @@ export function ToolDirectory() {
     <section className="directory-hero" aria-labelledby="directory-heading">
       <div className="directory-hero-inner">
         <div className="directory-intro">
-          <h1 id="directory-heading">PDF 整理与转换</h1>
-          <p>裁剪、合并、拆分页面，在 PDF、图片与办公文档之间转换。</p>
-          <SearchField value={query} onChange={setQuery} onSubmit={submit} placeholder="搜索工具，如：裁剪、JPG、Word" />
+          <h1 id="directory-heading"><Crop className="directory-heading-icon" size={25} aria-hidden="true" />PDF 整理与转换</h1>
+          <SearchField value={query} onChange={setQuery} onSubmit={submit} inputId="directory-search" placeholder="搜索裁剪、JPG、Word…" />
           <span className="directory-privacy"><ShieldCheck size={16} aria-hidden="true" />文件在浏览器内处理</span>
         </div>
         <div className="directory-art" aria-hidden="true">
           <div className="directory-sheet directory-sheet-back" />
-          <div className="directory-sheet directory-sheet-front"><b>PDF</b><i /><i /><i /><i /></div>
-          <div className="directory-cut"><i /><i /><i /><i /></div>
+          <div className="directory-sheet directory-sheet-front"><i /><i /><i /><i /></div>
+          <div className="directory-cut"><Crop size={61} strokeWidth={1.35} /></div>
         </div>
       </div>
     </section>
     <section className="directory-catalog" aria-labelledby="catalog-heading">
       <div className="directory-catalog-heading">
         <h2 id="catalog-heading">{filtering ? '搜索结果' : '全部工具'}</h2>
-        <span role="status">{results.length} 项工具</span>
+        {filtering && <span role="status">{results.length} 项工具</span>}
       </div>
       {filtering ? results.length ? <ul className="directory-results">{results.map(row)}</ul>
         : <div className="directory-empty"><Search size={25} aria-hidden="true" /><p>没找到匹配的工具。试试「合并」或「Excel」。</p></div>

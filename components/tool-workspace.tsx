@@ -5,13 +5,13 @@ import { ArrowUpFromLine, ShieldCheck, SlidersHorizontal } from 'lucide-react';
 import type { ToolTab } from './pdf-tools';
 import { toolDetails } from './tool-navigation';
 
-export function ToolHeading({ tool, description }: { tool: ToolTab; description?: string }) {
+export function ToolHeading({ tool }: { tool: ToolTab }) {
   const entry = toolDetails(tool);
   if (!entry) return null;
   return <header className="tool-title">
     <div className="tool-identity">
       <span className="tool-emblem" aria-hidden="true"><entry.icon size={25} /></span>
-      <div><h2>{entry.label}</h2><p>{description ?? entry.description}</p></div>
+      <h1>{entry.label}</h1>
     </div>
     <span className="tool-local"><ShieldCheck size={15} aria-hidden="true" />文件在本机处理</span>
   </header>;

@@ -5,7 +5,7 @@ import { dimensions, fullCrop, layout, marginCrop, MM, rotateEdit, type Edit } f
 import { openPdf, renderPage, demoPdf, exportPdf } from '../lib/pdf/engine';
 import { fileSize, byteLimit, checkSize } from '../lib/pdf/export';
 import PdfTools, {type ToolTab} from '../components/pdf-tools';
-import { ToolDirectory, ToolNav, WorkspaceSearch, toolFromHash, toolHref, toolLabel } from '../components/tool-navigation';
+import { MobileDock, ToolDirectory, ToolNav, WorkspaceSearch, toolFromHash, toolHref, toolLabel } from '../components/tool-navigation';
 import { ToolFilePanel, ToolHeading } from '../components/tool-workspace';
 import './navigation.css';
 import './workspace.css';
@@ -28,7 +28,7 @@ function Thumbnail({doc,edit,selected,onClick,index}:{doc:any;edit:Edit;selected
 }
 export default function Home({ feedbackUrl }: { feedbackUrl?: string } = {}) {
  const route=useSyncExternalStore(subscribeToToolRoute,readToolRoute,homeRoute);
- const [tool,setTool]=useState<ToolTab|null>(null),[toolBusy,setToolBusy]=useState(false);
+ const [tool,setTool]=useState<ToolTab|null>(route),[toolBusy,setToolBusy]=useState(false);
  const firstScreen=useRef(true);
  const [doc,setDoc]=useState<any>(null),[edits,setEdits]=useState<Edit[]>([]),[active,setActive]=useState(0),[name,setName]=useState(''),[busy,setBusy]=useState(''),[toast,setToast]=useState(''),[error,setError]=useState(''),[mode,setMode]=useState<'crop'|'layout'>('crop'),[raw,setRaw]=useState<HTMLCanvasElement|null>(null),[rendering,setRendering]=useState(false),[modal,setModal]=useState(false),[help,setHelp]=useState(false),[allowCompression,setAllowCompression]=useState(true),[originalSize,setOriginalSize]=useState(0),[scope,setScope]=useState('all'),[zoom,setZoom]=useState(1),[dragOver,setDragOver]=useState(false),[historyTick,setHistoryTick]=useState(0);
  const settings=useRef<HTMLElement>(null);
@@ -78,13 +78,14 @@ export default function Home({ feedbackUrl }: { feedbackUrl?: string } = {}) {
   document.getElementById(tool?'tool-workbench':'tool-directory')?.focus({preventScroll:true});
  },[tool]);
  const navigationLocked=toolBusy||!!busy;
+ const homeView=!tool;
  const ratio=e?(mode==='crop'?d.w/d.h:l!.w/l!.h):.707;
- return <main className={`app${tool==='crop'?' crop-page':tool?'':' directory-page'}${dragOver?' is-dragging':''}`} onDragOver={ev=>{if(tool==='crop'&&ev.dataTransfer.types.includes('Files')){ev.preventDefault();setDragOver(true);}}} onDragLeave={ev=>{if(!ev.currentTarget.contains(ev.relatedTarget as Node))setDragOver(false);}} onDrop={ev=>{ev.preventDefault();setDragOver(false);if(tool==='crop')selectFile(ev.dataTransfer.files[0]);}}>
+ return <main className={`app${tool==='crop'?' crop-page':homeView?' directory-page':''}${dragOver?' is-dragging':''}`} onDragOver={ev=>{if(tool==='crop'&&ev.dataTransfer.types.includes('Files')){ev.preventDefault();setDragOver(true);}}} onDragLeave={ev=>{if(!ev.currentTarget.contains(ev.relatedTarget as Node))setDragOver(false);}} onDrop={ev=>{ev.preventDefault();setDragOver(false);if(tool==='crop')selectFile(ev.dataTransfer.files[0]);}}>
  <header className="app-header">
-  <div className={`topbar${feedbackUrl ? ' has-feedback' : ''}`}>
+  <div className="topbar">
    <div className="tool-brand-row">
     <a className="brand" href={toolHref(null)} aria-label="裁纸台首页" aria-disabled={navigationLocked||undefined} tabIndex={navigationLocked?-1:undefined} onClick={event=>{if(navigationLocked)event.preventDefault();}}><span className="brand-icon"><Crop size={22}/></span><span className="brand-name">裁纸台</span></a>
-    {tool&&<a className="tool-home-link" href={toolHref(null)} aria-disabled={navigationLocked||undefined} tabIndex={navigationLocked?-1:undefined} onClick={event=>{if(navigationLocked)event.preventDefault();}}>全部工具</a>}
+    {tool&&<ToolNav key={tool} active={tool} disabled={navigationLocked}/>}
    </div>
    {tool&&<WorkspaceSearch key={tool} disabled={navigationLocked}/>}
    {feedbackUrl && (
@@ -98,15 +99,15 @@ export default function Home({ feedbackUrl }: { feedbackUrl?: string } = {}) {
     <button className="button primary" disabled={!e||!!busy} onClick={()=>setModal(true)}><Download size={16}/>导出 PDF</button>
    </div>}
   </div>
-  {tool&&<ToolNav key={tool} active={tool} disabled={navigationLocked}/>}
  </header>
+ <MobileDock home={homeView} disabled={navigationLocked} feedback={feedbackUrl}/>
  <input type="file" ref={input} accept=".pdf,application/pdf" hidden onChange={ev=>{selectFile(ev.target.files?.[0]);ev.target.value='';}}/>
  {!tool&&<ToolDirectory/>}
  <div className="tool-workbench" hidden={!tool} tabIndex={-1} id="tool-workbench" role="region" aria-label={tool?toolLabel(tool):undefined}>
  <PdfTools active={tool??'crop'} current={sourceBytes.current?{name,bytes:sourceBytes.current}:null} onBusy={setToolBusy}/>
  <div className={`workspace ${doc?'crop-workspace':'crop-start'}`} style={{display:tool==='crop'?undefined:'none'}}>
  {!doc?<div className="pdf-tools crop-intro">
-  <ToolHeading tool="crop" description="拖动裁剪框或输入边距，调整扫描件和 PDF 的页面版式。" />
+  <ToolHeading tool="crop" />
   <div className="tool-grid">
    <ToolFilePanel title="导入要裁剪的 PDF" hint="可拖入 PDF，支持多页文件，最大 200 MB。"
     action="选择 PDF 文件" onChoose={()=>input.current?.click()} disabled={!!busy}
@@ -127,7 +128,7 @@ export default function Home({ feedbackUrl }: { feedbackUrl?: string } = {}) {
   <div className="thumbnails">{edits.map((a,i)=><Thumbnail key={a.id} doc={doc} edit={a} selected={a.id===e.id} onClick={()=>setActive(a.id)} index={i}/>)}</div>
   <div className="page-actions"><button title="页面上移" aria-label="页面上移" disabled={idx<=0} onClick={()=>movePage(-1)}><ChevronUp size={17}/></button><button title="页面下移" aria-label="页面下移" disabled={idx>=edits.length-1} onClick={()=>movePage(1)}><ChevronDown size={17}/></button><button title="删除当前页" aria-label="删除当前页" disabled={edits.length<=1} onClick={()=>{commit(edits.filter(a=>a.id!==e.id));setActive(edits[idx===edits.length-1?idx-1:idx+1].id);}}><Trash2 size={16}/></button></div>
  </aside>
- <section className="editor"><div className="toolbar"><div className="segmented"><button className={mode==='crop'?'active':''} onClick={()=>setMode('crop')}><Crop size={16}/>裁剪边框</button><button className={mode==='layout'?'active':''} onClick={()=>setMode('layout')}><Expand size={16}/>缩放排版</button></div><div className="tools"><button title="撤销 (⌘/Ctrl Z)" aria-label="撤销" disabled={!history.current.length||!!busy} onClick={undo}><Undo2 size={17}/></button><button title="重做" aria-label="重做" disabled={!future.current.length||!!busy} onClick={redo}><Redo2 size={17}/></button><span className="divider"/><button title="顺时针旋转 90°" aria-label="顺时针旋转 90 度" disabled={!e} onClick={()=>commit(edits.map(a=>a.id===e.id?rotateEdit(a):a))}><RotateCw size={17}/></button></div></div>
+ <section className="editor"><div className="toolbar"><div className="segmented"><button className={mode==='crop'?'active':''} aria-pressed={mode==='crop'} onClick={()=>setMode('crop')}><Crop size={16}/>裁剪边框</button><button className={mode==='layout'?'active':''} aria-pressed={mode==='layout'} onClick={()=>setMode('layout')}><Expand size={16}/>缩放排版</button></div><div className="tools"><button title="撤销 (⌘/Ctrl Z)" aria-label="撤销" disabled={!history.current.length||!!busy} onClick={undo}><Undo2 size={17}/></button><button title="重做" aria-label="重做" disabled={!future.current.length||!!busy} onClick={redo}><Redo2 size={17}/></button><span className="divider"/><button title="顺时针旋转 90°" aria-label="顺时针旋转 90 度" disabled={!e} onClick={()=>commit(edits.map(a=>a.id===e.id?rotateEdit(a):a))}><RotateCw size={17}/></button></div></div>
  <button type="button" className="crop-settings-jump" onClick={()=>{settings.current?.scrollIntoView({block:'start'});settings.current?.focus({preventScroll:true});}}><SlidersHorizontal size={15} aria-hidden="true" />{mode==='crop'?'查看裁剪设置':'查看排版设置'}</button>
  <div className="stage">
  <div className="canvas-label"><span>第 {idx+1} 页 / 共 {edits.length} 页</span><span>{mode==='crop'?'蓝框内的内容将被保留':'导出效果预览'}</span></div><div className="paper-space"><div ref={paper} className={`paper ${mode==='layout'?'layout-paper':''}`} style={{aspectRatio:ratio,width:`min(${zoom*100}%, calc(var(--paper-height) * ${ratio} * ${zoom}))`,minWidth:zoom>1?`min(${zoom*100}%, calc(var(--paper-height) * ${ratio} * ${zoom}))`:undefined}} onPointerDown={mode==='layout'?(ev)=>start(ev,'content'):undefined} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end}><canvas ref={view} style={{visibility:raw?'visible':'hidden'}}/>{rendering&&<div className="rendering">正在绘制页面…</div>}{raw&&mode==='crop'&&<div className="crop-overlay"><div className="crop-box" style={{left:`${e.crop.x*100}%`,top:`${e.crop.y*100}%`,width:`${e.crop.w*100}%`,height:`${e.crop.h*100}%`}} onPointerDown={ev=>start(ev,'move')}><div className="crop-grid"/><span className="crop-size">{(d.w*e.crop.w/MM).toFixed(1)} × {(d.h*e.crop.h/MM).toFixed(1)} mm</span>{['nw','n','ne','e','se','s','sw','w'].map(h=><div key={h} className={`handle handle-${h}`} onPointerDown={ev=>start(ev,h)}/>)}</div></div>}</div></div><div className="canvas-tip">{mode==='crop'?<Crop size={14}/>:<Move size={14}/>}<span>{mode==='crop'?'拖动角点或边线裁剪 · 拖动选框移动区域':'拖动纸面移动内容 · 右侧调整大小与留白'}</span></div>

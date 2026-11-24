@@ -126,16 +126,30 @@ export default function PhotoScanner({active,onBusy}:{active:boolean;onBusy:(bus
   }
   async function redetect(photo:ScanPhoto) {await task(async signal=>{const result=await worker.current!.call<Detection>('detect',{blob:photo.source},setBusy,signal);if(signal.aborted)return;update(photo.id,{points:copyQuad(result.points),initial:copyQuad(result.points),confidence:result.confidence,warning:result.warning,dirty:true,needsReview:result.confidence!=='detected'});});}
   async function exportPdf() {await task(async signal=>{const result=await scanPdf(photos,worker.current!,quality,limit,setBusy,signal);if(signal.aborted)return;downloadBytes(result.bytes,`${safeStem(name||'拍照扫描')}.pdf`,'application/pdf');setMessage(`已导出 ${photos.length} 页扫描 PDF，${fileSize(result.bytes.byteLength)}。${result.optimized?'已优化图片编码，保持所选分辨率。':''}`);});}
+  const importButtons = <div className="scan-import-buttons">
+    <button className={photos.length?'button':'button primary'} disabled={!!busy} onClick={()=>camera.current?.click()}><Camera size={18}/>拍照</button>
+    <button className="button" disabled={!!busy} onClick={()=>input.current?.click()}><ImagePlus size={18}/>{photos.length?'添加照片':'选择照片'}</button>
+  </div>;
   return <section className="pdf-tools scanner-tool" hidden={!active}>
-    <ToolHeading tool="photo-scan" description="拍照或选择照片，上传即生成扫描预览，调整边框、模式和增强程度时自动更新。"/>
+    <ToolHeading tool="photo-scan"/>
     <input ref={input} type="file" accept={ACCEPT} multiple aria-label="选择扫描照片" hidden onChange={e=>{void add(Array.from(e.target.files||[]));e.target.value='';}}/>
     <input ref={camera} type="file" accept="image/*,.heic,.heif" capture="environment" aria-label="拍照扫描纸张" hidden onChange={e=>{void add(Array.from(e.target.files||[]));e.target.value='';}}/>
-    <div className="scan-toolbar"><div className="scan-import-buttons"><button className="button primary" disabled={!!busy} onClick={()=>camera.current?.click()}><Camera size={18}/>拍照</button><button className="button" disabled={!!busy} onClick={()=>input.current?.click()}><ImagePlus size={18}/>{photos.length?'添加照片':'选择照片'}</button></div>
-      <span className="scan-total">{photos.length?`${photos.length} 页，${pending?`${pending} 页预览自动更新中`:'可导出'}`:'支持 JPG、PNG、WebP、HEIC'}</span>
-      <div className="scan-export-buttons">
-      <button className="button primary" disabled={!!busy||!photos.length||pending>0} onClick={exportPdf}><Download size={18}/>导出扫描 PDF</button></div>
-    </div>
-    {!photos.length?<div className="scan-empty" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();if(!busy)void add(Array.from(e.dataTransfer.files));}}><div className="scan-empty-paper" aria-hidden="true"><span/><span/><span/><span/><i/><i/><i/></div><h3>让照片成为一页扫描件</h3><p>把平整纸张拍完整，尽量让四个角都出现在照片里。</p><button className="button" disabled={!!busy} onClick={()=>input.current?.click()}>选择照片或拖到这里</button><small>照片在浏览器内处理，不上传到服务器。</small></div>:<>
+    {!photos.length?<div className="scan-empty" onDragOver={e=>e.preventDefault()} onDrop={e=>{
+      e.preventDefault();
+      if(!busy)void add(Array.from(e.dataTransfer.files));
+    }}>
+      <div className="scan-empty-paper" aria-hidden="true"><span/><span/><span/><span/><i/><i/><i/></div>
+      <h3>导入纸张照片</h3>
+      <p>拍照时保留纸张四角，或拖入 JPG、PNG、WebP、HEIC 照片。</p>
+      {importButtons}
+    </div>:<>
+      <div className="scan-toolbar">
+        {importButtons}
+        <span className="scan-total">{photos.length} 页{pending?`，${pending} 页预览更新中`:''}</span>
+        <div className="scan-export-buttons">
+          <button className="button primary" disabled={!!busy||pending>0} onClick={exportPdf}><Download size={18}/>导出扫描 PDF</button>
+        </div>
+      </div>
       <div className="scan-export-settings"><label>文件名<input aria-label="扫描 PDF 文件名" value={name} disabled={!!busy} onChange={e=>setName(e.target.value)}/></label><label>清晰度<select aria-label="扫描 PDF 清晰度" value={quality} disabled={!!busy} onChange={e=>setQuality(Number(e.target.value))}><option value={3508}>高清（长边最多 3508 像素）</option><option value={2400}>标准（长边最多 2400 像素）</option></select></label><label className="scan-size-limit"><input type="checkbox" checked={limit} disabled={!!busy} onChange={e=>setLimit(e.target.checked)}/><span>不超过原照片合计大小<small>原照片合计 {fileSize(totalSize)}；无法满足时停止导出</small></span></label></div>
       <div className="scan-photo-list" aria-label="连续扫描页面">{photos.map((photo,index)=><PhotoCard key={photo.id} photo={photo} index={index} total={photos.length} disabled={!!busy} rendering={rendering===photo.id} previewError={failures[photo.id]?.key===scanPreviewKey(photo)?failures[photo.id].message:undefined} retry={()=>retry(photo.id)} update={patch=>update(photo.id,patch)} detect={()=>void redetect(photo)} remove={()=>{setPhotos(previous=>previous.filter(p=>p.id!==photo.id));setMessage('');}} move={offset=>setPhotos(previous=>{const next=[...previous];[next[index],next[index+offset]]=[next[index+offset],next[index]];return next;})}/>)}</div>
     </>}

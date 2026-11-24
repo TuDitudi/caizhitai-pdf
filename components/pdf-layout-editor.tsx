@@ -101,15 +101,15 @@ export default function PdfLayoutEditor({active,current,onBusy}:Props) {
   });}
   async function download(){if(!file||!pages.length)return;await task(async signal=>{const bytes=await exportLayoutWord(pages,file.name,setBusy,signal);if(signal.aborted)return;downloadBytes(bytes,`${safeStem(file.name)}-可编辑.docx`,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');setMessage(`已导出 ${pages.length} 页 Word，文字可继续编辑，包含 ${count} 处网页文字修改。`);});}
   return <section className="pdf-tools layout-editor" hidden={!active}>
-    <ToolHeading tool="word" description="连续预览并编辑，保留原字体与版式，导出可继续编辑的 Word 文档。"/>
+    <ToolHeading tool="word"/>
     <input ref={input} type="file" accept=".pdf,application/pdf" aria-label="选择编辑 PDF" hidden onChange={e=>{void upload(Array.from(e.target.files||[]));e.target.value='';}}/>
     <input ref={fontInput} type="file" accept=".ttf,.otf,.ttc" multiple aria-label="选择完整原字体" hidden onChange={e=>{const files=Array.from(e.target.files||[]);e.target.value='';if(files.length)void task(signal=>applyFonts(files,signal));}}/>
-    <div className="layout-toolbar"><button className="button" disabled={!!busy} onClick={()=>input.current?.click()}><FileUp size={17}/>{file?'更换 PDF':'选择 PDF'}</button>
-      {file&&<span className="layout-filename" title={file.name}>{file.name}<small>{file.pages} 页{pages.length?`，已修改 ${count} 处`:''}</small></span>}
+    {file&&<div className="layout-toolbar"><button className="button" disabled={!!busy} onClick={()=>input.current?.click()}><FileUp size={17}/>更换 PDF</button>
+      <span className="layout-filename" title={file.name}>{file.name}<small>{file.pages} 页{pages.length?`，已修改 ${count} 处`:''}</small></span>
       <div className="layout-toolbar-actions">{pages.length>0&&<button className="button" disabled={!!busy||!undo.current.length} onClick={()=>{const previous=undo.current.pop();if(previous)setPages(previous);}}><Undo2 size={16}/>撤销</button>}
-        <button className="button" disabled={!file||!!busy} onClick={recognize}><ScanText size={17}/>{pages.length?'重新识别':'识别可编辑文字'}</button>
-        <button className="button primary" disabled={!pages.length||!!busy||problems.length>0} onClick={download}><Download size={17}/>导出 Word（DOCX）</button></div>
-    </div>
+        <button className={pages.length?'button':'button primary'} disabled={!!busy} onClick={recognize}><ScanText size={17}/>{pages.length?'重新识别':'识别可编辑文字'}</button>
+        {pages.length>0&&<button className="button primary" disabled={!!busy||problems.length>0} onClick={download}><Download size={17}/>导出 Word（DOCX）</button>}</div>
+    </div>}
     {!pages.length?<div className="layout-start" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();if(!busy)void upload(Array.from(e.dataTransfer.files));}}>
       <div className="layout-start-paper"><FilePenLine size={38}/><h3>{file?'文件已准备好':'把 PDF 拖到这里'}</h3><p>识别后可直接改字，再导出可编辑的 Word。</p>{!file&&<button className="button primary" disabled={!!busy} onClick={()=>input.current?.click()}>选择 PDF</button>}{current&&<button className="button" disabled={!!busy} onClick={()=>void task(async()=>load(await inspectPdf(current.bytes,current.name)))}>使用编辑器的原始文件</button>}</div>
       <div className="layout-import-settings"><label>识别页码<input aria-label="识别页码" placeholder="全部页，或 1-3,5" value={range} disabled={!!busy} onChange={e=>setRange(e.target.value)}/></label><label>扫描识别语言<select aria-label="扫描识别语言" value={language} disabled={!!busy} onChange={e=>setLanguage(e.target.value as typeof language)}><option value="chi_sim+eng">简体中文 + 英文</option><option value="eng">英文</option></select></label><p>文字版读取原字体。扫描图片无法可靠判断字体，识别后需指定完整原字体。</p></div>
