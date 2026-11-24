@@ -10,30 +10,29 @@ import type { ToolTab } from './pdf-tools';
 type ToolEntry = {
   id: ToolTab;
   label: string;
-  description: string;
   keywords: string;
   icon: LucideIcon;
 };
 
 const groups: { id: string; label: string; tools: ToolEntry[] }[] = [
   { id: 'organize', label: '整理 PDF', tools: [
-    { id: 'crop', label: '裁剪与排版', description: '裁边、缩放内容，调整纸张和页面顺序。', keywords: '裁剪pdf 扫描件 边框 页边距 旋转 删除 a4 crop resize', icon: Crop },
-    { id: 'merge', label: '合并 PDF', description: '按指定顺序合并多份 PDF。', keywords: '拼接 合并文件 pdf合并 merge combine', icon: Files },
-    { id: 'split', label: '按页分割', description: '按页码提取页面，或拆成多份文件。', keywords: '拆分 pdf分割 分页 提取页面 split extract', icon: Scissors },
+    { id: 'crop', label: '裁剪与排版', keywords: '裁剪pdf 扫描件 边框 页边距 旋转 删除 a4 crop resize 裁边 缩放 页面顺序 调整纸张', icon: Crop },
+    { id: 'merge', label: '合并 PDF', keywords: '拼接 合并文件 pdf合并 merge combine 文件顺序', icon: Files },
+    { id: 'split', label: '按页分割', keywords: '拆分 pdf分割 分页 提取页面 split extract 提取页面', icon: Scissors },
   ] },
   { id: 'export', label: '从 PDF 转出', tools: [
-    { id: 'word', label: 'PDF 转 Word', description: '保留原字体与版式，编辑预览后导出可编辑 DOCX。', keywords: 'pdf2word word doc docx ocr 文字识别 pdf编辑 改字 原貌 模板 印章', icon: FileText },
-    { id: 'epub', label: 'PDF 转 EPUB', description: '制作带封面的电子书，支持漫画和扫描件。', keywords: 'pdf2epub ebook 电子书 封面 漫画', icon: BookOpen },
-    { id: 'pdf-to-images', label: 'PDF 转图片', description: '按页导出 PNG 或 JPG 图片。', keywords: 'pdf2jpg pdf2png jpeg jpg png image 导出图片', icon: FileImage },
-    { id: 'pdf-to-ppt', label: 'PDF 转 PPT', description: '每页生成一张保留原貌的幻灯片。', keywords: 'pdf2ppt pptx powerpoint 幻灯片 演示文稿', icon: Presentation },
-    { id: 'pdf-to-excel', label: 'PDF 转 Excel', description: '提取表格或按页导出图片到工作簿。', keywords: 'pdf2excel xlsx xls 表格 ocr 文字识别', icon: Table2 },
+    { id: 'word', label: 'PDF 转 Word', keywords: 'pdf2word word doc docx ocr 文字识别 pdf编辑 改字 原貌 模板 印章 字形 字体 编辑预览 可编辑', icon: FileText },
+    { id: 'epub', label: 'PDF 转 EPUB', keywords: 'pdf2epub ebook 电子书 封面 漫画 扫描件', icon: BookOpen },
+    { id: 'pdf-to-images', label: 'PDF 转图片', keywords: 'pdf2jpg pdf2png jpeg jpg png image 导出图片 按页导出', icon: FileImage },
+    { id: 'pdf-to-ppt', label: 'PDF 转 PPT', keywords: 'pdf2ppt pptx powerpoint 幻灯片 演示文稿 保留原貌', icon: Presentation },
+    { id: 'pdf-to-excel', label: 'PDF 转 Excel', keywords: 'pdf2excel xlsx xls 表格 ocr 文字识别 工作簿', icon: Table2 },
   ] },
   { id: 'import', label: '转为 PDF', tools: [
-    { id: 'ofd-to-pdf', label: 'OFD 转 PDF', description: '预览 OFD，按原尺寸将全部或指定页面导出为 PDF。', keywords: 'ofd 转 pdf ofd2pdf 国产版式 电子发票 电子公文', icon: FileText },
-    { id: 'photo-scan', label: '拍照扫描', description: '自动找纸张、手动调四角，拉正并增强为扫描 PDF。', keywords: '拍照扫描 扫描仪 文档扫描 手机照片 四角 边框 透视 阴影 heic heif scan camera', icon: Camera },
-    { id: 'images-to-pdf', label: '图片转 PDF', description: '多张图片排序后合成一份 PDF。', keywords: 'jpg2pdf png2pdf jpg jpeg png webp bmp gif image 照片', icon: Image },
-    { id: 'ppt-to-pdf', label: 'PPT 转 PDF', description: '将 PPT 或 PPTX 幻灯片导出为 PDF。', keywords: 'ppt2pdf pptx powerpoint 幻灯片 演示文稿', icon: Presentation },
-    { id: 'excel-to-pdf', label: 'Excel 转 PDF', description: '选择工作表，自动分页导出 PDF。', keywords: 'excel2pdf xls xlsx xlsm 表格 工作簿', icon: Table2 },
+    { id: 'ofd-to-pdf', label: 'OFD 转 PDF', keywords: 'ofd 转 pdf ofd2pdf 国产版式 电子发票 电子公文 原尺寸 指定页', icon: FileText },
+    { id: 'photo-scan', label: '拍照扫描', keywords: '拍照扫描 扫描仪 文档扫描 手机照片 四角 边框 透视 阴影 heic heif scan camera 拉正 增强', icon: Camera },
+    { id: 'images-to-pdf', label: '图片转 PDF', keywords: 'jpg2pdf png2pdf jpg jpeg png webp bmp gif image 照片 图片排序', icon: Image },
+    { id: 'ppt-to-pdf', label: 'PPT 转 PDF', keywords: 'ppt2pdf pptx powerpoint 幻灯片 演示文稿', icon: Presentation },
+    { id: 'excel-to-pdf', label: 'Excel 转 PDF', keywords: 'excel2pdf xls xlsx xlsm 表格 工作簿 工作表 自动分页', icon: Table2 },
   ] },
 ];
 
@@ -66,7 +65,7 @@ function searchTools(value: string) {
   return tools.map(tool => {
     const label = normalize(tool.label);
     const keywords = normalize(tool.keywords);
-    const all = label + keywords + normalize(tool.description);
+    const all = label + keywords;
     const score = label === query ? 4 : label.includes(query) ? 3 : keywords.includes(query) ? 2 : terms.every(term => all.includes(term)) ? 1 : 0;
     return { tool, score };
   }).filter(match => match.score > 0).sort((a, b) => b.score - a.score).map(match => match.tool);
@@ -227,9 +226,9 @@ export function ToolDirectory() {
 
   function row(tool: ToolEntry) {
     return <li key={tool.id}>
-      <a className="directory-tool" href={toolHref(tool.id)} aria-label={tool.label}>
+      <a className="directory-tool" href={toolHref(tool.id)}>
         <span className="directory-tool-icon"><tool.icon size={20} aria-hidden="true" /></span>
-        <span className="directory-tool-text"><strong>{tool.label}</strong><span>{tool.description}</span></span>
+        <span className="directory-tool-name">{tool.label}</span>
         <ChevronRight size={16} className="directory-arrow" aria-hidden="true" />
       </a>
     </li>;

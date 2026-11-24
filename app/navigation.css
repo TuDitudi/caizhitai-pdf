@@ -263,17 +263,17 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  min-height: 72px;
+  min-height: 56px;
   height: 100%;
-  padding: 11px 12px;
+  padding: 9px 12px;
   color: var(--ui-ink);
   text-decoration: none;
 }
 .directory-tool:hover { background: #f2f7ff; }
 .directory-tool:focus-visible { outline-offset: -3px; border-radius: 10px; }
 .directory-tool-icon {
-  width: 37px;
-  height: 37px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   border-radius: 11px;
@@ -282,9 +282,7 @@
 }
 .directory-export .directory-tool-icon { color: #5744a0; background: #eeebfc; }
 .directory-import .directory-tool-icon { color: #20695e; background: #e5f4ef; }
-.directory-tool-text { min-width: 0; display: grid; gap: 4px; }
-.directory-tool-text strong { font-weight: 690; font-size: 15px; line-height: 1.3; }
-.directory-tool-text > span { color: var(--ui-muted); font-size: 12px; line-height: 1.45; }
+.directory-tool-name { min-width: 0; font-weight: 690; font-size: 15px; line-height: 1.35; }
 .directory-arrow { color: #65738a; }
 .directory-empty {
   display: flex;
@@ -386,7 +384,7 @@
   .directory-heading-icon { display: block; }
   .directory-catalog { padding-top: 23px; }
   .directory-groups, .directory-catalog .directory-results { grid-template-columns: minmax(0, 1fr); gap: 15px; }
-  .directory-tool { min-height: 63px; padding-inline: 12px; }
+  .directory-tool { padding-inline: 12px; }
   .app-header .topbar { padding-inline: max(13px, env(safe-area-inset-left)); }
   .app-header .tool-brand-row .brand { gap: 7px; }
   .brand-name { font-size: 17px; }
