@@ -2,70 +2,81 @@
 
 [简体中文](README.md) · **English** · [日本語](README.ja.md) · [한국어](README.ko.md)
 
+Caizhitai is an open-source browser toolkit for documents. Trim scan borders, organize PDF pages, straighten photos into scanned PDFs, or convert between PDF, images, and common office formats. Files are processed in your browser, and the live tools work without an account.
+
 **[Try Caizhitai online](https://tuditudi.github.io/caizhitai-pdf/)** · [Send feedback](https://wj.qq.com/s2/28624021/oft7/)
 
-Caizhitai is a browser-based PDF toolkit. Crop dark borders from scans, fit pages to A4 paper, merge or split documents, and convert between PDF, images, and common office formats. Your browser processes the files and conversion results locally.
-
-![Caizhitai home page with a search box and 11 tools grouped by category](docs/images/tool-directory.png)
+![Caizhitai home page with search and 13 tools organized into three groups](docs/images/tool-directory.png)
 
 ## Quick start
 
-1. Search for a tool by name or format, such as JPG, Word, or EPUB. You can also browse the categories or switch tools using the search box at the top of any tool page.
-2. Select a file from your device. To try cropping with a sample, open 「裁剪与排版」 (Crop and resize) and click 「先用示例试试看」 (Try a sample).
-3. Adjust the settings, check the preview, and download the result. Save your work before refreshing or closing the tab.
+1. Search by tool name or format, such as JPG or EPUB, or browse the categories on the home page. The tool pages have a search box and a tool switcher.
+2. Choose a file from your device or drag it into the tool. To try cropping with a sample, open [Crop and resize](https://tuditudi.github.io/caizhitai-pdf/#/tools/crop) and click 「先用示例试试看」 (Try a sample).
+3. Adjust the settings, review the preview, and download the result before refreshing or closing the tab.
 
-The interface is currently in Simplified Chinese. The Chinese labels above match the buttons on screen.
-
-## 13 tools
-
-| Tool | What it does |
-| --- | --- |
-| Crop and resize PDF | Drag the blue box or enter margins in millimeters. Adjust paper size, spacing, and scale, or rotate, reorder, and delete pages. |
-| Merge PDFs | Add several PDFs, arrange their order, and save them as one file. |
-| Split PDF | Split into single pages, fixed-size groups, or custom ranges. `1-3,5;6-8` creates two PDFs, packaged as a ZIP. |
-| PDF to Word | Scroll through pages, edit text in place, and export editable DOCX with the original font, size, color, and layout. |
-| PDF to EPUB | Reflow text or preserve scanned pages and comics as images. By default, the first selected page becomes the cover. The ebook language labels the EPUB, and scan recognition has its own language setting. |
-| PDF to images | Choose pages and resolution, then export PNG or JPG files. Multiple images can be downloaded as a ZIP. |
-| PDF to PowerPoint | Turn each PDF page into a slide image and export a PPTX. |
-| PDF to Excel | Extract tables or recognize scanned pages. Review the results and export XLSX, or insert each page as an image. |
-| Photo scanner | Detect and adjust paper corners in JPG, PNG, WebP, or HEIC photos and correct perspective. Uploads generate previews automatically; corners, color/B&W mode, enhancement, paper ratio, and rotation update the preview without an Apply button. Export multiple pages as a scanned PDF. |
-| Images to PDF | Arrange PNG, JPG/JPEG, WebP, BMP, or GIF images and combine them into a PDF. GIFs use their first frame. |
-| PowerPoint to PDF | Open PPT or PPTX files, preview the slides, and select which ones to export. |
-| Excel to PDF | Open XLS, XLSX, or XLSM files. Select sheets and paper orientation, then export them as PDF pages. |
-| OFD to PDF | Preview the first page and export all or selected pages as a PDF at the original page size. Text outlines and lines are preserved as vectors where supported, with a high-resolution lossless image fallback for complex pages. Verify signatures using the source OFD. |
+The interface is in Simplified Chinese. Chinese labels in this README match the controls on screen.
 
 ## Crop and resize
 
-On desktop, choose a page from the thumbnails on the left. Drag the blue box around the area you want to keep, or enter the margins on the right. On a phone, tap 「查看裁剪设置」 (View crop settings) to jump to the margin controls. Switch to 「缩放排版」 (Scale and layout) to adjust the paper size or spacing.
+Select a page and drag the corners or edges of the blue box, or enter margins in millimeters. A **3× magnifier** shows the paper edge and the blue crop guide while you drag and disappears when you release. Switch to 「缩放排版」 (Scale and layout) to adjust paper size, spacing, or content size. The magnifier also appears when you drag content across the page. You can rotate, reorder, and delete pages or apply the current settings to all pages. On a phone, tap 「查看裁剪设置」 (View crop settings) to reach the margin controls.
 
-A **3× magnifier** follows the pointer when you drag a crop corner or edge, so you can line up the blue crop guide with the paper edge. It also appears when you drag page content in 「缩放排版」 (Scale and layout) and closes when you release the mouse button or lift your finger. [Try Crop and resize online](https://tuditudi.github.io/caizhitai-pdf/#/tools/crop)
-
-![PDF crop editor with page thumbnails on the left, a blue crop box in the center, and crop settings on the right](docs/images/crop-workspace.png)
+![Crop editor showing a 3× magnifier and crop guides while the upper-left corner is being dragged](docs/images/crop-workspace.png)
 
 [View the mobile crop editor](docs/images/crop-mobile.png)
 
-A cropped export can be **at most as large as the original PDF in bytes**. Caizhitai tries to reuse the original images and text, then can attempt compression if the result exceeds the limit. It stops the download if the file is still too large. Compression may reduce image quality or remove the searchable text layer. Cropping can leave hidden content outside the visible area, so use a dedicated redaction tool for sensitive information.
+The cropped PDF can be **at most as large as the original in bytes**. The tool tries to reuse the original images and text and can apply compression if the result exceeds the limit. Compression can reduce image quality or remove the searchable text layer. The download stops if the file is still too large. Cropping can leave hidden data outside the visible area, so use a dedicated redaction tool for sensitive content.
+
+## Photo scanner
+
+Take a photo or import JPG, PNG, WebP, or HEIC/HEIF. Caizhitai tries to find the four paper corners, corrects perspective, and generates a preview automatically. Drag corners or edges, choose a color mode, or adjust enhancement, paper ratio, and rotation. The preview updates as you work. Reorder multiple photos and export them as one scanned PDF.
+
+![Photo scanner with the original photo and corner handles on the left and a straightened color preview on the right](docs/images/photo-scan.png)
+
+The scanner can also detect rounded card edges. Color or original colors make it easier to inspect fine print and patterns on cards. Batch imports show progress, and the tool asks you to review edges when detection is uncertain. The output is an image-based PDF. By default, the combined size of the input photos is the export limit. You can turn that limit off in the scanner.
+
+## Convert documents
+
+- **PDF to Word.** After recognition, scroll through the pages and click text to edit it in place. Export a DOCX with editable Word text boxes over a page background that retains table lines, photos, and stamps. If a PDF contains only a font subset, supply the matching complete font with editable embedding rights (TTF, OTF, or TTC). Scanned pages use OCR and require you to choose a font. If glyphs are missing or text overflows its box, the editor prompts you to supply the font or adjust the box. [View the Word editor](docs/images/pdf-to-word.png)
+- **PDF to EPUB.** Auto mode reflows pages with usable text. For scans and comics, choose page images to retain the layout. The first selected page is the default cover. The ebook language labels the EPUB and includes options such as Simplified Chinese, Traditional Chinese, English, Japanese, and Korean. OCR has a separate setting for Simplified Chinese plus English or English only. [View the EPUB converter](docs/images/pdf-to-epub.png)
+- **OFD to PDF.** Preview the first page and export all or selected pages at their original sizes. The converter uses vector text outlines and lines where possible, lossless high-resolution images for complex pages, and font substitutes when embedded fonts are unavailable. Verify digital signatures in the original OFD. [View the OFD converter](docs/images/ofd-to-pdf.png)
+
+## All 13 tools
+
+| Tool | What you can do |
+| --- | --- |
+| [Crop and resize](https://tuditudi.github.io/caizhitai-pdf/#/tools/crop) | Trim borders, resize paper or content, and reorder pages. |
+| [Merge PDFs](https://tuditudi.github.io/caizhitai-pdf/#/tools/merge) | Arrange multiple PDFs and combine them into one. |
+| [Split PDF](https://tuditudi.github.io/caizhitai-pdf/#/tools/split) | Split by page, group size, or custom ranges. <code>1-3,5;6-8</code> creates two PDFs. Multiple results are delivered as a ZIP. |
+| [PDF to Word](https://tuditudi.github.io/caizhitai-pdf/#/tools/word) | Edit text in place and export a DOCX that preserves the page layout. |
+| [PDF to EPUB](https://tuditudi.github.io/caizhitai-pdf/#/tools/epub) | Make an EPUB 3 with a table of contents and optional cover, using reflowable text or page images. |
+| [PDF to images](https://tuditudi.github.io/caizhitai-pdf/#/tools/pdf-to-images) | Choose pages and resolution and export PNG or JPG. Download multiple images as a ZIP. |
+| [PDF to PowerPoint](https://tuditudi.github.io/caizhitai-pdf/#/tools/pdf-to-ppt) | Make one image slide per selected PDF page and export PPTX. |
+| [PDF to Excel](https://tuditudi.github.io/caizhitai-pdf/#/tools/pdf-to-excel) | Extract or recognize tables, review the cells, and export XLSX. You can also insert pages as images. |
+| [OFD to PDF](https://tuditudi.github.io/caizhitai-pdf/#/tools/ofd-to-pdf) | Preview the first page and export selected pages at their original sizes. |
+| [Photo scanner](https://tuditudi.github.io/caizhitai-pdf/#/tools/photo-scan) | Correct perspective, preview enhancements, and export a scanned PDF. |
+| [Images to PDF](https://tuditudi.github.io/caizhitai-pdf/#/tools/images-to-pdf) | Arrange PNG, JPG/JPEG, WebP, BMP, or GIF files and combine them. GIFs use the first frame. |
+| [PowerPoint to PDF](https://tuditudi.github.io/caizhitai-pdf/#/tools/ppt-to-pdf) | Preview a PPT or PPTX and export selected slides as static PDF pages. |
+| [Excel to PDF](https://tuditudi.github.io/caizhitai-pdf/#/tools/excel-to-pdf) | Select sheets and orientation from an XLS, XLSX, or XLSM workbook and paginate by rows. |
+
+## Files and feedback
+
+- Import, preview, and export run in your browser. The website supplies shared assets such as OCR models and fonts.
+- The per-file limits are 200 MB for PDF and 80 MB for OFD. Device memory also affects how well large or complex documents can be processed.
+- Review OCR results, complex tables, and page layouts before downloading. Excel to PDF uses formula results saved in the workbook.
+- The 「意见与反馈」 (Feedback) button on the home and tool pages opens a Tencent survey. Include the tool name, steps, and any error message when reporting a problem.
 
 ## Run locally
 
 You need Node.js 22.13 or later, npm, and Python 3. Run these commands from the project directory.
 
-```bash
+~~~bash
 npm ci
 npm run build:web
 python3 -m http.server 5176 --bind 127.0.0.1 --directory offline-dist
-```
+~~~
 
-Then open [Caizhitai on your device](http://127.0.0.1:5176/).
-
-## Files and feedback
-
-- PDF, image, and document conversion runs in the browser. The website serves shared resources such as OCR models and fonts.
-- Each PDF can be up to 200 MB. The practical limit also depends on device memory and page complexity.
-- PDF to Word saves text as positioned editable Word text boxes and retains graphics, table lines, images, and stamps as page backgrounds; it does not rebuild native Word tables. Subset PDF fonts require the same complete original font (local font access or TTF/OTF/TTC upload) with editable embedding permission. Missing glyphs are reported instead of silently substituting fonts or shrinking text. Scans use OCR and require an explicit font choice; check repaired regions that overlap stamps or patterns. Complete embedded fonts increase DOCX size. Only selected pages are exported.
-- You can review Excel OCR results before exporting. Complex tables may be simplified. Excel to PDF uses the formula results saved in the workbook.
-- Click 「意见与反馈」 (Feedback) on the home page or any tool page to open the Tencent survey. For bug reports, include the tool name, the steps to reproduce the issue, and any error message.
+[Open Caizhitai in your browser](http://127.0.0.1:5176/)
 
 ## License
 
-Caizhitai's project code is available under the [MIT license](LICENSE). Bundled third-party resources, including PDF.js, Tesseract.js, OCR models, and fonts, retain their original licenses. See the notices for [PDF resources](public/pdf-assets/), [OCR resources](public/ocr/NOTICE.md), and [Office resources](public/office-assets/licenses.html).
+The project code is available under the [MIT License](LICENSE). Bundled assets follow their upstream licenses. [PDF](public/pdf-assets/LICENSE) · [OCR](public/ocr/NOTICE.md) · [Scanner](public/scanner/NOTICE.md) · [Office](public/office-assets/licenses.html) · [OFD](public/ofd-assets/)

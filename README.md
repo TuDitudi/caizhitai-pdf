@@ -2,70 +2,79 @@
 
 **简体中文** · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
+裁纸台是一套开源的浏览器文档工具。你可以裁掉扫描件的黑边、整理 PDF 页面、把手机照片拉正成扫描件，还能在 PDF、图片和常见办公格式之间转换。文件由浏览器在本机处理，在线试用无需注册。
+
 **[打开裁纸台在线试用](https://tuditudi.github.io/caizhitai-pdf/)** · [意见与反馈](https://wj.qq.com/s2/28624021/oft7/)
 
-裁纸台是一套在浏览器里运行的 PDF 工具。可以裁掉扫描件的黑边、把内容排到 A4 纸上，也可以合并、分割文档，在 PDF、图片和常见办公格式之间转换。导入的文件和转换结果由当前浏览器处理。
-
-![裁纸台首页，搜索框下方按类别展示 11 项工具](docs/images/tool-directory.png)
+![新版裁纸台首页，搜索框下方按三组展示 13 项工具](docs/images/tool-directory.png)
 
 ## 快速开始
 
-1. 在首页搜索「裁剪」「JPG」「Word」等关键词，或从分类列表中选工具。工具页顶部也可以搜索和切换。
-2. 选择本机文件。想先体验裁剪，可以点「先用示例试试看」。
-3. 调整设置，核对预览，再导出并下载。刷新或关闭标签页前请先保存结果。
-
-## 13 项工具
-
-| 工具 | 用法和结果 |
-| --- | --- |
-| 裁剪与排版 | 拖动蓝框或输入毫米边距，调整纸张、留白和缩放。也可旋转、排序、删除页面。 |
-| 合并 PDF | 导入多份 PDF，调整顺序后合为一份。 |
-| 按页分割 | 按单页、固定页数或指定范围拆分。`1-3,5;6-8` 会生成两份 PDF，多份结果打包为 ZIP。 |
-| PDF 转 Word | 连续滚动预览并在原位置改字，保留原字体、字号、颜色与版式，导出可继续编辑的 DOCX。 |
-| PDF 转 EPUB | 文字可重排，漫画和扫描页可保留原图。默认使用首个选中页作为封面。电子书语言用于标记 EPUB 的主要语言，扫描识别使用单独的语言设置。 |
-| PDF 转图片 | 选择页码和清晰度，导出 PNG 或 JPG。多页结果可下载为 ZIP。 |
-| PDF 转 PPT | 每页 PDF 生成一张图片幻灯片，导出 PPTX。 |
-| PDF 转 Excel | 提取表格或识别扫描页，校对后导出 XLSX。也可按页插入图片。 |
-| 拍照扫描 | 支持 JPG、PNG、WebP、HEIC；自动识别纸张四角，可手动调整并拉正，提供彩色、黑白和原色模式，多页连续预览后导出扫描 PDF。 |
-| 图片转 PDF | PNG、JPG/JPEG、WebP、BMP 和 GIF 可排序后合成 PDF。GIF 使用首帧。 |
-| PPT 转 PDF | 支持 PPT 和 PPTX，可预览幻灯片并选择导出页。 |
-| Excel 转 PDF | 支持 XLS、XLSX 和 XLSM，可选择工作表和纸张方向，再分页导出。 |
-| OFD 转 PDF | 在浏览器内预览 OFD 首页，选择全部或指定页码，按原页尺寸导出 PDF，文字轮廓和线条优先保留为矢量，复杂页面使用高清无损图像。电子签名请在原 OFD 中验证。 |
+1. 在首页搜索工具名或格式，例如「裁剪」「JPG」或「EPUB」。工具页顶部也可以搜索和切换。
+2. 选择或拖入本机文件。想先体验裁剪，打开[裁剪与排版](https://tuditudi.github.io/caizhitai-pdf/#/tools/crop)并点击「先用示例试试看」。
+3. 调整设置、核对预览，再下载结果。刷新或关闭标签页前请先保存。
 
 ## 裁剪与排版
 
-在桌面上从左侧选择页面，拖动蓝框留下需要的区域，也可以在右侧填写边距。手机上点「查看裁剪设置」即可跳到边距面板。需要调整纸张或留白时，切换到「缩放排版」。
+选中页面后，拖动蓝框的四角或边线，或输入要裁去的毫米数。拖动时 **3 倍放大镜**会显示纸张边缘和蓝色裁剪线，松手后自动收起。切换到「缩放排版」可更改纸张尺寸、留白和内容大小，在纸面上拖动内容也会显示放大镜。还可旋转、排序、删除页面，把当前设置应用到全部页。手机上点「查看裁剪设置」可跳到边距面板。
 
-拖动裁剪框的角点或边线时，光标旁会显示 **3 倍放大镜**，便于对齐纸张边缘和蓝色裁剪线。在「缩放排版」中拖动页面内容时也会显示，松开鼠标或手指后自动收起。 [在线试用裁剪与排版](https://tuditudi.github.io/caizhitai-pdf/#/tools/crop)
-
-![裁剪工作台，左侧是页面缩略图，中间为蓝色裁剪框，右侧是裁剪设置](docs/images/crop-workspace.png)
+![裁剪工作台，拖动左上角时显示 3 倍放大镜和蓝色裁剪线](docs/images/crop-workspace.png)
 
 [查看手机裁剪界面](docs/images/crop-mobile.png)
 
-裁剪导出的上限等于**原 PDF 的实际字节数**。程序优先复用原图和文字，超限时可尝试压缩。仍超限就停止下载。压缩可能降低清晰度或移除可搜索文字层。可视化裁剪可能保留框外数据，处理敏感信息时请使用专门的脱敏工具。
+裁剪导出以**原 PDF 的实际字节数**为上限。优先复用原图和文字，超限时可尝试压缩。压缩可能降低清晰度或移除可搜索文字层，仍超限则停止下载。可视化裁剪可能保留框外数据，敏感内容请用专门的脱敏工具删除。
 
-## 本地运行
+## 拍照扫描
 
-需要 Node.js 22.13 或更新版本、npm 和 Python 3。在项目目录运行以下命令。
+拍照或导入 JPG、PNG、WebP、HEIC／HEIF。裁纸台会尝试识别纸张四角，校正透视并自动生成预览。可拖动角点和边线，切换彩色、黑白或原色保留，调整增强程度、纸张比例和方向。预览会随设置更新，多张照片可排序后合成一份扫描 PDF。
 
-```bash
-npm ci
-npm run build:web
-python3 -m http.server 5176 --bind 127.0.0.1 --directory offline-dist
-```
+![拍照扫描工作台，左侧是带四角控制点的照片，右侧是拉正后的彩色扫描预览](docs/images/photo-scan.png)
 
-然后打开 [本地裁纸台](http://127.0.0.1:5176/)。
+也支持识别圆角证件的边框。处理证件时可选彩色或原色保留，方便核对细小文字和底纹。导入多张照片时会显示处理进度，边框识别把握较低时会提示核对。扫描结果是图片型 PDF，默认以原照片的合计大小为导出上限，可在拍照扫描工具内关闭此限制。
+
+## 文档转换
+
+- **PDF 转 Word**。识别后连续滚动预览，点击文字即可在原位置编辑。DOCX 中的文字仍可编辑，表格线、照片和印章保留在页面背景中。PDF 只有字体子集时，需补齐允许编辑嵌入的完整原字体（TTF、OTF 或 TTC）。扫描页用 OCR 识别文字，需手动指定字体。遇到缺字或文字框放不下时，界面会提示补齐字体或调整文字框。 [查看 Word 编辑界面](docs/images/pdf-to-word.png)
+- **PDF 转 EPUB**。自动模式将有可用文字层的页面转为可重排文字，扫描页和漫画页可选「页面图片」保留原貌。默认用所选第一页做封面。电子书语言支持简体中文、繁体中文、英语、日语、韩语等，用于标记 EPUB 的主要语言。OCR 单独设置，目前可选简体中文加英文或仅英文。 [查看 EPUB 转换界面](docs/images/pdf-to-epub.png)
+- **OFD 转 PDF**。可预览首页并按原尺寸导出全部或指定页面。文字轮廓和线条优先保留为矢量，复杂页面使用高清无损图像，缺少内嵌字体时使用替代字体。请在原 OFD 中验证电子签名。 [查看 OFD 转换界面](docs/images/ofd-to-pdf.png)
+
+## 全部 13 项工具
+
+| 工具 | 可完成的操作 |
+| --- | --- |
+| [裁剪与排版](https://tuditudi.github.io/caizhitai-pdf/#/tools/crop) | 裁边、缩放、调整纸张和页面顺序。 |
+| [合并 PDF](https://tuditudi.github.io/caizhitai-pdf/#/tools/merge) | 将多份 PDF 按调整后的顺序合成一份。 |
+| [按页分割](https://tuditudi.github.io/caizhitai-pdf/#/tools/split) | 按单页、固定页数或范围拆分。<code>1-3,5;6-8</code> 生成两份 PDF，多份结果打包为 ZIP。 |
+| [PDF 转 Word](https://tuditudi.github.io/caizhitai-pdf/#/tools/word) | 编辑原位文字，保留页面版式，导出 DOCX。 |
+| [PDF 转 EPUB](https://tuditudi.github.io/caizhitai-pdf/#/tools/epub) | 生成带目录和可选封面的 EPUB 3，支持文字重排和页面图片。 |
+| [PDF 转图片](https://tuditudi.github.io/caizhitai-pdf/#/tools/pdf-to-images) | 按页码和清晰度导出整页 PNG 或 JPG，多页可打包为 ZIP。 |
+| [PDF 转 PPT](https://tuditudi.github.io/caizhitai-pdf/#/tools/pdf-to-ppt) | 将选中的 PDF 页面逐页转换为图片幻灯片，导出 PPTX。 |
+| [PDF 转 Excel](https://tuditudi.github.io/caizhitai-pdf/#/tools/pdf-to-excel) | 提取或识别表格，校对后导出 XLSX，也可将整页作为图片插入。 |
+| [OFD 转 PDF](https://tuditudi.github.io/caizhitai-pdf/#/tools/ofd-to-pdf) | 预览首页，选择页码并按原尺寸导出。 |
+| [拍照扫描](https://tuditudi.github.io/caizhitai-pdf/#/tools/photo-scan) | 修正纸张透视，预览增强效果，合成扫描 PDF。 |
+| [图片转 PDF](https://tuditudi.github.io/caizhitai-pdf/#/tools/images-to-pdf) | 将 PNG、JPG／JPEG、WebP、BMP 或 GIF 排序并合成 PDF。GIF 使用首帧。 |
+| [PPT 转 PDF](https://tuditudi.github.io/caizhitai-pdf/#/tools/ppt-to-pdf) | 预览 PPT 或 PPTX，选择幻灯片并导出静态 PDF 页面。 |
+| [Excel 转 PDF](https://tuditudi.github.io/caizhitai-pdf/#/tools/excel-to-pdf) | 从 XLS、XLSX 或 XLSM 中选择工作表和纸张方向，按行分页。 |
 
 ## 文件与反馈
 
-- PDF、图片和文档转换在浏览器内执行。识别模型与字体等公共资源由网站提供。
-- 单份 PDF 支持最大 200 MB。实际处理能力也受设备内存和页面复杂度影响。
-- PDF 转 Word：上传 PDF → 识别 → 连续滚动并编辑 → 导出 DOCX。文字保存为原位置的可编辑 Word 文本框，表格线、图片与印章等图形保留为页面背景；表格结构不会转成 Word 表格。为防止改字后字体变化，PDF 字体子集需补齐同版本完整原字体（可从本机读取或选择 TTF/OTF/TTC），并检查字体允许可编辑嵌入；缺字时提示补齐，不自动替换或缩小字号。扫描页使用 OCR，原字体需人工指定；与文字重叠的印章和花纹请核对修复效果。完整字体嵌入会增加 Word 体积。只导出选定页码。
-- Excel 的识别结果可在预览中校对，复杂表格可能简化。Excel 转 PDF 使用工作簿内保存的公式结果。
-- 在首页或任意工具页点「意见与反馈」可打开腾讯问卷。报告问题时，可填写工具名称、操作步骤和报错文字。
+- 导入、预览和导出在浏览器内完成。网站会提供 OCR 模型、字体等公共资源。
+- 单份 PDF 最多 200 MB，OFD 最多 80 MB。实际处理能力也取决于设备内存和页面复杂度。
+- OCR、复杂表格和版式转换请在下载前核对结果。Excel 转 PDF 使用工作簿内保存的公式计算结果。
+- 首页和工具页的「意见与反馈」会打开腾讯问卷。反馈问题时请提供工具名称、操作步骤和报错文字。
 
-拍照扫描先使用缩小图寻找边框，导出再处理原照片；支持拖动四角与边线、角点放大镜、方向键微调、恢复边框和页面排序。上传后自动生成预览，调整四角、扫描模式、增强程度、纸张比例或旋转时自动更新，无需点击确认或应用。未可靠识别的边框会提示核对；原照片始终保留，可重新调整。默认限制导出体积不超过原照片合计大小，无法满足时停止导出。自动比例是估算值，已知纸型可选择 A4 或 A5；失焦、强反光及拍摄范围之外的内容无法恢复。此工具导出图片型扫描 PDF，不自动添加 OCR 文字层。
+## 本地运行
+
+需要 Node.js 22.13 或更新版本、npm 和 Python 3。在项目目录执行下列命令。
+
+~~~bash
+npm ci
+npm run build:web
+python3 -m http.server 5176 --bind 127.0.0.1 --directory offline-dist
+~~~
+
+[在本机浏览器中打开裁纸台](http://127.0.0.1:5176/)
 
 ## 开源许可
 
-裁纸台项目代码采用 [MIT 许可证](LICENSE)。随附的 PDF.js、Tesseract.js、OCR 模型、字体等第三方资源适用各自的上游许可。声明见 [PDF 资源](public/pdf-assets/)、[OCR 资源](public/ocr/NOTICE.md) 、[扫描资源](public/scanner/NOTICE.md) 和 [Office 资源](public/office-assets/licenses.html)。
+项目代码采用 [MIT 许可证](LICENSE)。随附资源遵循各自的上游许可。 [PDF](public/pdf-assets/LICENSE) · [OCR](public/ocr/NOTICE.md) · [扫描](public/scanner/NOTICE.md) · [Office](public/office-assets/licenses.html) · [OFD](public/ofd-assets/)
